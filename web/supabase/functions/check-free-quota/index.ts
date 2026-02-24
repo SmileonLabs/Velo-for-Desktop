@@ -7,7 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const DAILY_FREE_LIMIT = 3;
+const VIDEO_DAILY_FREE_LIMIT = 3;
+const IMAGE_DAILY_FREE_LIMIT = 20;
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const supabase = createClient(supabaseUrl, serviceRoleKey);
@@ -29,6 +30,9 @@ Deno.serve(async (req: Request) => {
     const commit = Boolean(body?.commit);
     const requestedFilesRaw = Number(body?.requestedFiles ?? 1);
     const requestedFiles = Number.isFinite(requestedFilesRaw) ? Math.max(1, Math.floor(requestedFilesRaw)) : 1;
+    const mediaType = body?.mediaType === "image" ? "image" : "video";
+    const dailyLimit = mediaType === "image" ? IMAGE_DAILY_FREE_LIMIT : VIDEO_DAILY_FREE_LIMIT;
+    const usageKey = `${deviceId}:${mediaType}`;
 
     if (!deviceId) {
       return new Response(JSON.stringify({ allowed: false, reason: "INVALID_REQUEST" }), {
@@ -71,13 +75,13 @@ Deno.serve(async (req: Request) => {
     const { data: existingRows, error: existingError } = await supabase
       .from("free_daily_usage")
       .select("files_used")
-      .eq("device_fingerprint", deviceId)
+      .eq("device_fingerprint", usageKey)
       .eq("usage_date", today)
       .limit(1);
     if (existingError) throw existingError;
 
     const used = Number(existingRows?.[0]?.files_used ?? 0);
-    const remaining = Math.max(0, DAILY_FREE_LIMIT - used);
+    const remaining = Math.max(0, dailyLimit - used);
     if (requestedFiles > remaining) {
       return new Response(
         JSON.stringify({
@@ -109,7 +113,7 @@ Deno.serve(async (req: Request) => {
       .from("free_daily_usage")
       .upsert(
         {
-          device_fingerprint: deviceId,
+          device_fingerprint: usageKey,
           usage_date: today,
           files_used: nextUsed,
           updated_at: new Date().toISOString(),
@@ -122,7 +126,7 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({
         allowed: true,
         isPaid: false,
-        remaining: Math.max(0, DAILY_FREE_LIMIT - nextUsed),
+        remaining: Math.max(0, dailyLimit - nextUsed),
         resetAt: toIsoTomorrowUtc(),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },

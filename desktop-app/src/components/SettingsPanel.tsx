@@ -1,13 +1,16 @@
 import React from 'react';
 import {
     Settings2, VolumeX, Trash2, Sliders, Info,
-    Wind, ShieldCheck, Sparkles, Wand2, Monitor, FolderOpen, Zap
+    Wind, ShieldCheck, Sparkles, Wand2, Monitor, FolderOpen, Zap, Image as ImageIcon
 } from 'lucide-react';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
-import { CompressionSettings, ResolutionPreset, Translation } from '../types';
+import { CompressionSettings, ResolutionPreset, Translation, Language } from '../types';
 import { FORMAT_OPTIONS, RESOLUTION_OPTIONS } from '../constants';
 
 interface SettingsPanelProps {
+    processingMode: 'video' | 'image';
+    onChangeProcessingMode: (mode: 'video' | 'image') => void;
+    language: Language;
     settings: CompressionSettings;
     updateSettings: (partial: Partial<CompressionSettings>) => void;
     t: Translation;
@@ -17,7 +20,18 @@ interface SettingsPanelProps {
     onOpenLegal: () => void;
 }
 
-export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, updateSettings, t, isProcessing, filesCount, totalSize, onOpenLegal }) => {
+export const SettingsPanel: React.FC<SettingsPanelProps> = ({
+    processingMode,
+    onChangeProcessingMode,
+    language,
+    settings,
+    updateSettings,
+    t,
+    isProcessing,
+    filesCount,
+    totalSize,
+    onOpenLegal,
+}) => {
 
     const formatBytes = (bytes: number) => {
         if (bytes === 0) return '0 B';
@@ -57,7 +71,36 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, updateSe
             </div>
 
             <div className="space-y-6">
+                <div className="p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 space-y-3">
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                        {language === 'ko' ? '작업 타입' : 'Task Type'}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <button
+                            type="button"
+                            onClick={() => onChangeProcessingMode('video')}
+                            disabled={isProcessing}
+                            className={`rounded-xl px-3 py-2 text-xs font-bold border transition-all ${processingMode === 'video'
+                                ? 'bg-white dark:bg-slate-800 border-primary-500 text-primary-600 dark:text-primary-300'
+                                : 'bg-transparent border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300'} ${isProcessing ? 'opacity-60 cursor-not-allowed' : ''}`}
+                        >
+                            {language === 'ko' ? '동영상 압축' : 'Video Compression'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => onChangeProcessingMode('image')}
+                            disabled={isProcessing}
+                            className={`rounded-xl px-3 py-2 text-xs font-bold border transition-all ${processingMode === 'image'
+                                ? 'bg-white dark:bg-slate-800 border-primary-500 text-primary-600 dark:text-primary-300'
+                                : 'bg-transparent border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300'} ${isProcessing ? 'opacity-60 cursor-not-allowed' : ''}`}
+                        >
+                            {language === 'ko' ? '이미지 압축' : 'Image Compression'}
+                        </button>
+                    </div>
+                </div>
+
                 {/* 1. Format & Resolution Card */}
+                {processingMode === 'video' && (
                 <div className="p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <section>
@@ -158,6 +201,56 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, updateSe
                         </div>
                     )}
                 </div>
+                )}
+
+                {processingMode === 'image' && (
+                    <div className="p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 space-y-4">
+                        <div className="flex items-center gap-2">
+                            <ImageIcon size={14} className="text-primary-500" />
+                            <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                                {language === 'ko' ? '이미지 압축 설정' : 'Image Compression Settings'}
+                            </label>
+                        </div>
+
+                        <section>
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
+                                {language === 'ko' ? '결과 포맷' : 'Output Format'}
+                            </label>
+                            <select
+                                value={settings.imageFormat}
+                                onChange={(e) => updateSettings({ imageFormat: e.target.value as 'JPG' | 'PNG' | 'WEBP' })}
+                                disabled={isProcessing}
+                                className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                            >
+                                <option value="JPG">JPG</option>
+                                <option value="PNG">PNG</option>
+                                <option value="WEBP">WEBP</option>
+                            </select>
+                        </section>
+
+                        <section>
+                            <div className="flex justify-between items-center mb-2">
+                                <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                                    {language === 'ko' ? '품질' : 'Quality'}
+                                </label>
+                                <span className="text-xs font-bold px-2 py-0.5 bg-primary-500 text-white rounded-full">{settings.imageQuality}</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="1"
+                                max="100"
+                                step="1"
+                                value={settings.imageQuality}
+                                onChange={(e) => updateSettings({ imageQuality: parseInt(e.target.value) })}
+                                disabled={isProcessing}
+                                className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                            />
+                            <p className="mt-2 text-[11px] text-gray-500 dark:text-slate-400">
+                                {language === 'ko' ? '원본 비율을 유지한 채 압축합니다.' : 'Compression keeps the original aspect ratio.'}
+                            </p>
+                        </section>
+                    </div>
+                )}
 
                 {/* 2. Output Destination Section */}
                 <div className="p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800">
@@ -196,6 +289,47 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, updateSe
                     </div>
                 </div>
 
+                {processingMode === 'image' && (
+                    <div className="grid grid-cols-1 gap-3 pb-8">
+                        <div className="group flex flex-col p-3 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl transition-all">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                    <Sparkles size={16} className="text-gray-400 group-hover:text-primary-500" />
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t.parallel}</span>
+                                        <Tooltip text={t.parallelTip} />
+                                    </div>
+                                </div>
+                                <select
+                                    value={settings.parallelLimit}
+                                    onChange={(e) => updateSettings({ parallelLimit: parseInt(e.target.value) })}
+                                    className="bg-gray-50 dark:bg-slate-800 border-none rounded text-xs font-bold p-1"
+                                >
+                                    <option value={1}>1</option>
+                                    <option value={2}>2</option>
+                                    <option value={4}>4</option>
+                                    <option value={8}>8</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <label className="group flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl hover:border-red-500 transition-all cursor-pointer">
+                            <div className="flex items-center gap-3">
+                                <Trash2 size={16} className="text-gray-400 group-hover:text-red-500" />
+                                <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t.moveToTrash}</span>
+                            </div>
+                            <input
+                                type="checkbox"
+                                checked={settings.moveToTrash}
+                                onChange={(e) => updateSettings({ moveToTrash: e.target.checked })}
+                                className="w-4 h-4 rounded text-primary-500 focus:ring-0"
+                            />
+                        </label>
+                    </div>
+                )}
+
+                {processingMode === 'video' && (
+                <>
                 {/* 3. Compression Quality & Presets */}
                 <section className="p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800">
                     <div className="flex justify-between items-center mb-4">
@@ -418,6 +552,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, updateSe
                         <input type="checkbox" checked={settings.moveToTrash} onChange={(e) => updateSettings({ moveToTrash: e.target.checked })} className="w-4 h-4 rounded text-primary-500 focus:ring-0" />
                     </label>
                 </div>
+                </>
+                )}
             </div>
 
             {/* Footer Legal Link */}

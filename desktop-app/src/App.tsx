@@ -7,21 +7,50 @@ import { LegalModal } from './components/LegalModal';
 import { VideoFile, CompressionSettings, Language } from './types';
 import { TRANSLATIONS } from './constants';
 import { open } from '@tauri-apps/plugin-dialog';
+import { getVersion } from '@tauri-apps/api/app';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { compressVideo, getFileInfo } from './lib';
+import { compressVideo, compressImage, getFileInfo } from './lib';
 import { ActivationModal } from './components/ActivationModal';
+import { LicenseStatusModal } from './components/LicenseStatusModal';
 import { supabase } from './supabase';
 
 const App: React.FC = () => {
     const PAID_OFFLINE_GRACE_HOURS = 72;
+    const VIDEO_EXTENSIONS = new Set([
+        'mp4', 'mov', 'avi', 'mkv', 'webm', 'm4v', 'wmv', 'flv', 'mpeg', 'mpg'
+    ]);
+    const IMAGE_EXTENSIONS = new Set([
+        'jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif'
+    ]);
+    const APP_UPDATE_META_URL = 'https://videolighter.smileon.app/desktop-version.json';
+
+    const getPathExtension = (path: string) => {
+        const lastDot = path.lastIndexOf('.');
+        if (lastDot < 0) return '';
+        return path.slice(lastDot + 1).toLowerCase();
+    };
+
+    const isVideoPath = (path: string) => VIDEO_EXTENSIONS.has(getPathExtension(path));
+    const isImagePath = (path: string) => IMAGE_EXTENSIONS.has(getPathExtension(path));
+
+    const [processingMode, setProcessingMode] = useState<'video' | 'image'>('video');
+
+    const isAcceptedPath = (path: string) => {
+        return processingMode === 'video' ? isVideoPath(path) : isImagePath(path);
+    };
 
     // --- State ---
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
     const [language, setLanguage] = useState<Language>('ko');
     const [isActivated, setIsActivated] = useState<boolean>(false);
     const [showActivation, setShowActivation] = useState<boolean>(false);
+    const [showLicenseStatus, setShowLicenseStatus] = useState<boolean>(false);
     const [isLicensingReady, setIsLicensingReady] = useState(false);
+    const [updateInfo, setUpdateInfo] = useState<{
+        latestVersion: string;
+        downloadUrl: string;
+    } | null>(null);
 
     const isWithinOfflineGrace = (lastVerifyAt: string | null) => {
         if (!lastVerifyAt) return false;
@@ -90,6 +119,42 @@ const App: React.FC = () => {
         void bootstrap();
     }, []);
 
+    useEffect(() => {
+        const normalize = (v: string) => v.replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+        const isNewer = (latest: string, current: string) => {
+            const a = normalize(latest);
+            const b = normalize(current);
+            const len = Math.max(a.length, b.length);
+            for (let i = 0; i < len; i++) {
+                const av = a[i] ?? 0;
+                const bv = b[i] ?? 0;
+                if (av > bv) return true;
+                if (av < bv) return false;
+            }
+            return false;
+        };
+
+        const checkUpdate = async () => {
+            try {
+                const currentVersion = await getVersion();
+                const res = await fetch(APP_UPDATE_META_URL, { cache: 'no-store' });
+                if (!res.ok) return;
+                const data = await res.json();
+                const latestVersion = String(data?.version ?? '').trim();
+                const downloadUrl = String(data?.downloadUrl ?? 'https://videolighter.smileon.app').trim();
+                if (!latestVersion) return;
+
+                if (isNewer(latestVersion, currentVersion)) {
+                    setUpdateInfo({ latestVersion, downloadUrl });
+                }
+            } catch {
+                // Ignore update check errors.
+            }
+        };
+
+        void checkUpdate();
+    }, []);
+
     const [files, setFiles] = useState<VideoFile[]>([]);
     const [settings, setSettings] = useState<CompressionSettings>({
         format: 'MP4',
@@ -110,6 +175,8 @@ const App: React.FC = () => {
         outputMode: 'Same',
         customOutputPath: undefined,
         useHighEfficiencyCodec: false, // Default to FALSE (VP9 Safe)
+        imageFormat: 'JPG',
+        imageQuality: 80,
     });
 
     const [isProcessing, setIsProcessing] = useState(false);
@@ -132,6 +199,7 @@ const App: React.FC = () => {
 
     const stopFnsRef = useRef<Map<string, () => void>>(new Map());
     const activeIdsRef = useRef<Set<string>>(new Set());
+    const storedLicenseKey = localStorage.getItem('VL_LICENSE_KEY');
 
     // --- Theme Effect ---
     useEffect(() => {
@@ -145,7 +213,10 @@ const App: React.FC = () => {
     // --- Handlers ---
     const addFiles = useCallback(async (paths: string[]) => {
         if (isProcessing) return;
-        const newFilesPromises = paths.map(async (path) => {
+        const acceptedPaths = paths.filter(isAcceptedPath);
+        if (acceptedPaths.length === 0) return;
+
+        const newFilesPromises = acceptedPaths.map(async (path) => {
             const name = path.split(/[\\/]/).pop() || 'Unknown';
             const info = await getFileInfo(path);
             return {
@@ -159,7 +230,7 @@ const App: React.FC = () => {
         });
         const newFiles = await Promise.all(newFilesPromises);
         setFiles(prev => [...prev, ...newFiles]);
-    }, [isProcessing]);
+    }, [isProcessing, processingMode]);
 
     // Native Drag and Drop Listener for Tauri v2
     useEffect(() => {
@@ -186,8 +257,10 @@ const App: React.FC = () => {
             const selected = await open({
                 multiple: true,
                 filters: [{
-                    name: 'Video',
-                    extensions: ['mp4', 'mov', 'avi', 'mkv', 'webm']
+                    name: processingMode === 'video' ? 'Video' : 'Image',
+                    extensions: processingMode === 'video'
+                        ? ['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4v', 'wmv', 'flv', 'mpeg', 'mpg']
+                        : ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif']
                 }]
             });
             if (selected) {
@@ -197,7 +270,23 @@ const App: React.FC = () => {
         } catch (err) {
             console.error('Failed to open file dialog:', err);
         }
-    }, [isProcessing, addFiles]);
+    }, [isProcessing, addFiles, processingMode]);
+
+    const handleChangeProcessingMode = useCallback((mode: 'video' | 'image') => {
+        if (isProcessing || processingMode === mode) return;
+        setProcessingMode(mode);
+        setFiles([]);
+        setTotalProgress(0);
+        setCurrentFileId(null);
+    }, [isProcessing, processingMode]);
+
+    const handleLicenseButtonClick = useCallback(() => {
+        if (isActivated) {
+            setShowLicenseStatus(true);
+            return;
+        }
+        setShowActivation(true);
+    }, [isActivated]);
 
     const handleRemove = useCallback((id: string) => {
         if (isProcessing) return;
@@ -233,8 +322,12 @@ const App: React.FC = () => {
             const lastDot = filenameWithExt.lastIndexOf('.');
             const filename = lastDot !== -1 ? filenameWithExt.substring(0, lastDot) : filenameWithExt;
 
-            const ext = settings.format.toLowerCase();
-            const resolutionSuffix = settings.resolution === 'Original' ? '' : `_${settings.resolution}`;
+            const videoFormat = settings.format;
+            const imageFormat = settings.imageFormat;
+            const ext = (processingMode === 'image' ? imageFormat : videoFormat).toLowerCase();
+            const resolutionSuffix = processingMode === 'image'
+                ? ''
+                : (settings.resolution === 'Original' ? '' : `_${settings.resolution}`);
 
             let outDir = dir;
             if (settings.outputMode === 'Custom' && settings.customOutputPath) {
@@ -243,14 +336,26 @@ const App: React.FC = () => {
 
             const outputPath = `${outDir}\\${filename}_compressed${resolutionSuffix}.${ext}`;
 
-            const { promise, stop } = compressVideo(
-                file.path,
-                outputPath,
-                settings,
-                (progress) => {
-                    setFiles(prev => prev.map(f => f.id === file.id ? { ...f, progress: progress.percent } : f));
-                }
-            );
+            const task = processingMode === 'video'
+                ? compressVideo(
+                    file.path,
+                    outputPath,
+                    { ...settings, format: videoFormat },
+                    (progress) => {
+                        setFiles(prev => prev.map(f => f.id === file.id ? { ...f, progress: progress.percent } : f));
+                    }
+                )
+                : compressImage(
+                    file.path,
+                    outputPath,
+                    imageFormat,
+                    settings.imageQuality,
+                    () => {
+                        setFiles(prev => prev.map(f => f.id === file.id ? { ...f, progress: 100 } : f));
+                    }
+                );
+
+            const { promise, stop } = task;
 
             stopFnsRef.current.set(file.id, stop);
             await promise;
@@ -343,7 +448,7 @@ const App: React.FC = () => {
             try {
                 const machineId = await invoke<string>('get_machine_id');
                 const { data, error } = await supabase.functions.invoke('check-free-quota', {
-                    body: { deviceId: machineId, requestedFiles, commit: false }
+                    body: { deviceId: machineId, requestedFiles, commit: false, mediaType: processingMode }
                 });
 
                 if (error) {
@@ -353,6 +458,18 @@ const App: React.FC = () => {
                         remaining: null,
                         resetAt: null,
                         reason: 'OFFLINE_OR_SERVER',
+                    });
+                    return;
+                }
+
+                if (data?.isPaid) {
+                    setIsActivated(true);
+                    setFreeQuotaState({
+                        checking: false,
+                        allowed: null,
+                        remaining: null,
+                        resetAt: null,
+                        reason: null,
                     });
                     return;
                 }
@@ -376,7 +493,7 @@ const App: React.FC = () => {
         };
 
         void checkFreeQuota();
-    }, [isActivated, isProcessing, getRequestedFiles]);
+    }, [isActivated, isProcessing, getRequestedFiles, processingMode]);
 
     const startCompression = useCallback(async () => {
         if (!isActivated) {
@@ -391,7 +508,7 @@ const App: React.FC = () => {
             try {
                 const machineId = await invoke<string>('get_machine_id');
                 const { data, error } = await supabase.functions.invoke('check-free-quota', {
-                    body: { deviceId: machineId, requestedFiles, commit: true }
+                    body: { deviceId: machineId, requestedFiles, commit: true, mediaType: processingMode }
                 });
 
                 if (error || !data?.allowed) {
@@ -405,13 +522,24 @@ const App: React.FC = () => {
                     return;
                 }
 
-                setFreeQuotaState({
-                    checking: false,
-                    allowed: true,
-                    remaining: typeof data?.remaining === 'number' ? data.remaining : null,
-                    resetAt: data?.resetAt ?? null,
-                    reason: null,
-                });
+                if (data?.isPaid) {
+                    setIsActivated(true);
+                    setFreeQuotaState({
+                        checking: false,
+                        allowed: null,
+                        remaining: null,
+                        resetAt: null,
+                        reason: null,
+                    });
+                } else {
+                    setFreeQuotaState({
+                        checking: false,
+                        allowed: true,
+                        remaining: typeof data?.remaining === 'number' ? data.remaining : null,
+                        resetAt: data?.resetAt ?? null,
+                        reason: null,
+                    });
+                }
             } catch {
                 setFreeQuotaState({
                     checking: false,
@@ -442,7 +570,7 @@ const App: React.FC = () => {
 
         setIsProcessing(true);
         setTotalProgress(0);
-    }, [files, isProcessing, isActivated, getRequestedFiles, freeQuotaState.checking]);
+    }, [files, isProcessing, isActivated, getRequestedFiles, freeQuotaState.checking, processingMode, settings]);
 
     const startDisabled = isProcessing
         ? false
@@ -452,6 +580,7 @@ const App: React.FC = () => {
         );
 
     const freeStatusMessage = (() => {
+        const dailyLimit = processingMode === 'image' ? 20 : 3;
         if (isActivated) return null;
         if (freeQuotaState.checking) {
             return language === 'ko'
@@ -461,19 +590,20 @@ const App: React.FC = () => {
         if (freeQuotaState.allowed === false) {
             if (freeQuotaState.reason === 'FREE_LIMIT_REACHED') {
                 const resetText = freeQuotaState.resetAt ? new Date(freeQuotaState.resetAt).toLocaleString() : '-';
+                const remain = typeof freeQuotaState.remaining === 'number' ? freeQuotaState.remaining : 0;
                 return language === 'ko'
-                    ? `\uBB34\uB8CC \uD50C\uB79C \uD55C\uB3C4(\uD558\uB8E8 3\uAC1C)\uC5D0 \uB3C4\uB2EC\uD588\uC2B5\uB2C8\uB2E4. \uB2E4\uC74C \uCD08\uAE30\uD654: ${resetText}`
-                    : `Free-plan limit reached (3/day). Next reset: ${resetText}`;
+                    ? `\uBB34\uB8CC \uD50C\uB79C \uC624\uB298 \uB0A8\uC740 \uD69F\uC218: ${remain}/${dailyLimit} (\uD55C\uB3C4 \uB3C4\uB2EC) · \uB2E4\uC74C \uCD08\uAE30\uD654: ${resetText}`
+                    : `Free mode remaining today: ${remain}/${dailyLimit} (limit reached) · Next reset: ${resetText}`;
             }
             return language === 'ko'
                 ? '\uBB34\uB8CC \uD50C\uB79C\uC740 \uC628\uB77C\uC778 \uC5F0\uACB0\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.'
                 : 'Free mode requires an online connection.';
         }
         if (freeQuotaState.allowed === true) {
-            const remain = freeQuotaState.remaining ?? 0;
+            const remain = typeof freeQuotaState.remaining === 'number' ? freeQuotaState.remaining : 0;
             return language === 'ko'
-                ? `\uBB34\uB8CC \uD50C\uB79C \uC624\uB298 \uB0A8\uC740 \uD69F\uC218: ${remain}`
-                : `Free mode remaining today: ${remain}`;
+                ? `\uBB34\uB8CC \uD50C\uB79C \uC624\uB298 \uB0A8\uC740 \uD69F\uC218: ${remain}/${dailyLimit}`
+                : `Free mode remaining today: ${remain}/${dailyLimit}`;
         }
         return null;
     })();
@@ -485,8 +615,36 @@ const App: React.FC = () => {
                 setTheme={setTheme}
                 language={language}
                 setLanguage={setLanguage}
-                onOpenActivation={() => setShowActivation(true)}
+                onLicenseButtonClick={handleLicenseButtonClick}
+                isActivated={isActivated}
             />
+            {updateInfo && (
+                <div className="mx-4 mt-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
+                    <div className="flex items-center justify-between gap-3">
+                        <span>
+                            {language === 'ko'
+                                ? `새 버전(${updateInfo.latestVersion})이 있습니다. 업데이트를 권장합니다.`
+                                : `A new version (${updateInfo.latestVersion}) is available. Update is recommended.`}
+                        </span>
+                        <div className="flex items-center gap-2 shrink-0">
+                            <a
+                                href={updateInfo.downloadUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-blue-700"
+                            >
+                                {language === 'ko' ? '업데이트' : 'Update'}
+                            </a>
+                            <button
+                                onClick={() => setUpdateInfo(null)}
+                                className="rounded-lg border border-blue-300 px-3 py-1.5 text-[11px] font-bold hover:bg-blue-100 dark:border-blue-800 dark:hover:bg-blue-900/40"
+                            >
+                                {language === 'ko' ? '닫기' : 'Dismiss'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <main className="flex-1 flex overflow-hidden">
                 <div className="w-full lg:w-3/5 border-r border-gray-200 dark:border-slate-800 h-full flex flex-col">
                     <Sidebar
@@ -497,11 +655,16 @@ const App: React.FC = () => {
                         onClearAll={handleClearAll}
                         onOpenFolder={handleOpenFolder}
                         t={TRANSLATIONS[language]}
+                        language={language}
+                        processingMode={processingMode}
                         freePlanMessage={freeStatusMessage}
                     />
                 </div>
                 <div className="hidden lg:flex lg:w-2/5 h-full flex-col">
                     <SettingsPanel
+                        processingMode={processingMode}
+                        onChangeProcessingMode={handleChangeProcessingMode}
+                        language={language}
                         settings={settings}
                         updateSettings={updateSettings}
                         t={TRANSLATIONS[language]}
@@ -543,6 +706,13 @@ const App: React.FC = () => {
                 isDark={theme === 'dark'}
                 currentLanguage={language}
                 onLanguageChange={(lang) => setLanguage(lang)}
+            />
+            <LicenseStatusModal
+                isOpen={showLicenseStatus}
+                onClose={() => setShowLicenseStatus(false)}
+                language={language}
+                isDark={theme === 'dark'}
+                storedLicenseKey={storedLicenseKey}
             />
         </div>
     );

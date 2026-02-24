@@ -35,6 +35,8 @@ export interface CompressionSettings {
     outputMode: 'Same' | 'Custom';
     customOutputPath?: string;
     useHighEfficiencyCodec: boolean; // true = AV1 (High Tech), false = VP9 (Safe)
+    imageFormat: 'JPG' | 'PNG' | 'WEBP';
+    imageQuality: number; // 1-100
 }
 
 export type Language = 'en' | 'ko';

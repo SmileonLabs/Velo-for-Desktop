@@ -1,4 +1,6 @@
 import { Command, Child } from '@tauri-apps/plugin-shell';
+import { readFile } from '@tauri-apps/plugin-fs';
+import { invoke } from '@tauri-apps/api/core';
 import { CompressionSettings } from './types';
 
 export interface FFmpegProgress {
@@ -9,6 +11,91 @@ export interface FFmpegProgress {
 }
 
 export type ProgressCallback = (progress: FFmpegProgress) => void;
+
+function toDataUrl(bytes: Uint8Array, mimeType: string): string {
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, i + chunkSize);
+        binary += String.fromCharCode(...chunk);
+    }
+    return `data:${mimeType};base64,${btoa(binary)}`;
+}
+
+function dataUrlToBytes(dataUrl: string): Uint8Array {
+    const base64 = dataUrl.split(',')[1] || '';
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+}
+
+function getMimeForInput(path: string): string {
+    const ext = path.split('.').pop()?.toLowerCase() || '';
+    if (ext === 'png') return 'image/png';
+    if (ext === 'webp') return 'image/webp';
+    if (ext === 'gif') return 'image/gif';
+    if (ext === 'bmp') return 'image/bmp';
+    return 'image/jpeg';
+}
+
+function getMimeForOutput(format: 'JPG' | 'PNG' | 'WEBP'): string {
+    if (format === 'PNG') return 'image/png';
+    if (format === 'WEBP') return 'image/webp';
+    return 'image/jpeg';
+}
+
+export function compressImage(
+    inputPath: string,
+    outputPath: string,
+    format: 'JPG' | 'PNG' | 'WEBP',
+    quality: number,
+    onProgress?: ProgressCallback
+): { promise: Promise<void>, stop: () => Promise<void> } {
+    const run = async () => {
+        const sourceBytes = await readFile(inputPath);
+        const sourceDataUrl = toDataUrl(sourceBytes, getMimeForInput(inputPath));
+
+        const img = new Image();
+        const loaded = new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error('Failed to load image'));
+        });
+        img.src = sourceDataUrl;
+        await loaded;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            throw new Error('Failed to create canvas context');
+        }
+
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        const outputMime = getMimeForOutput(format);
+        const normalizedQuality = Math.max(0.01, Math.min(1, quality / 100));
+        const outputDataUrl = canvas.toDataURL(outputMime, normalizedQuality);
+        const outputBytes = dataUrlToBytes(outputDataUrl);
+
+        await invoke('write_binary_file', {
+            path: outputPath,
+            bytes: Array.from(outputBytes),
+        });
+        if (onProgress) onProgress({ percent: 100, time: '', fps: 0, speed: '' });
+    };
+
+    return {
+        promise: run(),
+        stop: async () => {
+            return;
+        }
+    };
+}
 
 /**
  * Checks for available hardware acceleration for AV1 encoding.

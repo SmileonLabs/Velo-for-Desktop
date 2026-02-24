@@ -1,9 +1,9 @@
 import React from 'react';
 import {
     Plus, Upload, FileVideo, X, Clock, CheckCircle2,
-    AlertCircle, Files, Trash2, UploadCloud, Loader2, Folder
+    AlertCircle, Files, Trash2, UploadCloud, Loader2, Folder, Image as ImageIcon
 } from 'lucide-react';
-import { VideoFile, Translation } from '../types';
+import { VideoFile, Translation, Language } from '../types';
 
 interface SidebarProps {
     files: VideoFile[];
@@ -13,6 +13,8 @@ interface SidebarProps {
     onClearAll: () => void;
     onOpenFolder: (path: string) => void;
     t: Translation;
+    language: Language;
+    processingMode: 'video' | 'image';
     freePlanMessage?: string | null;
 }
 
@@ -24,6 +26,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onClearAll,
     onOpenFolder,
     t,
+    language,
+    processingMode,
     freePlanMessage = null,
 }) => {
 
@@ -53,10 +57,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <UploadCloud size={24} />
                 </div>
                 <p className="text-sm text-gray-600 dark:text-slate-300 font-medium text-center">
-                    {t.dropText}
+                    {processingMode === 'video'
+                        ? t.dropText
+                        : (language === 'ko' ? '이미지를 이곳에 드래그하여 용량을 줄이세요' : 'Drop your images here to lighten')}
                 </p>
                 <p className="mt-2 text-xs text-gray-400 dark:text-slate-500">
-                    MP4, MOV, MKV, AVI
+                    {processingMode === 'video' ? 'MP4, MOV, MKV, AVI' : 'JPG, PNG, WEBP'}
                 </p>
             </div>
 
@@ -92,7 +98,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin">
                     {files.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-slate-600 opacity-50">
-                            <FileVideo size={48} className="mb-2" />
+                            {processingMode === 'video' ? <FileVideo size={48} className="mb-2" /> : <ImageIcon size={48} className="mb-2" />}
                             <p className="text-sm">No files queued</p>
                         </div>
                     ) : (
@@ -113,7 +119,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                         </div>
                                     ) : (
                                         <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400 flex items-center justify-center">
-                                            <FileVideo size={20} />
+                                            {processingMode === 'video' ? <FileVideo size={20} /> : <ImageIcon size={20} />}
                                         </div>
                                     )}
                                 </div>
