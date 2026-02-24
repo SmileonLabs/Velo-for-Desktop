@@ -1,9 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
     Video, Sun, Moon, Monitor, Info, Sliders,
     UploadCloud, FileVideo, Files, Trash2, FolderOpen,
     Wand2, Zap, ShieldCheck, VolumeX, Play,
-    Loader2, X, CheckCircle2, Sparkles,
+    Loader2, X, CheckCircle2, Sparkles, Image as ImageIcon,
     Settings2, ExternalLink, ChevronDown
 } from 'lucide-react';
 import { useTranslation as useI18n } from 'react-i18next';
@@ -36,6 +36,8 @@ interface CompressionSettings {
     parallelLimit: number;
     outputMode: 'Same' | 'Custom';
     useHighEfficiencyCodec: boolean;
+    imageFormat: 'JPG' | 'PNG' | 'WEBP';
+    imageQuality: number;
 }
 
 // --- Translations (Synced with desktop-app/constants.ts) ---
@@ -102,9 +104,15 @@ const TRANSLATIONS = {
         highEfficiencyTip: "Enables ~30% better compression using latest AV1 technology. Requires AV1 codec on playback device.",
         downloadCodec: "Download AV1 Codec",
         folderOpen: "Open in folder",
-        showcase_title_1: "Real App Interface",
-        showcase_title_2: " Exactly.",
-        showcase_subtitle: "Powerful features packed into the most intuitive UI."
+        taskType: "Task Type",
+        videoCompression: "Video Compression",
+        imageCompression: "Image Compression",
+        imageSettings: "Image Compression Settings",
+        outputFormat: "Output Format",
+        imageQuality: "Image Quality",
+        showcase_title_1: "Real Compression Examples",
+        showcase_title_2: "",
+        showcase_subtitle: "Check compression performance with the real UI!\n* Compression ratio may vary depending on compression options."
     },
     ko: {
         dropText: "동영상을 이곳에 드래그하여 용량을 줄이세요",
@@ -168,14 +176,21 @@ const TRANSLATIONS = {
         highEfficiencyTip: "최신 AV1 기술로 30% 더 압축합니다.",
         downloadCodec: "AV1 코덱 다운로드 (무료)",
         folderOpen: "저장 폴더 열기",
-        showcase_title_1: "진짜 앱 화면 ",
-        showcase_title_2: "그대로.",
-        showcase_subtitle: "강력한 기능을 가장 직관적인 UI에 담았습니다."
+        taskType: "작업 타입",
+        videoCompression: "동영상 압축",
+        imageCompression: "이미지 압축",
+        imageSettings: "이미지 압축 설정",
+        outputFormat: "결과 포맷",
+        imageQuality: "이미지 품질",
+        showcase_title_1: "실제 압축 예시",
+        showcase_title_2: "",
+        showcase_subtitle: "압축 성능을 실제 UI와 함께 확인해보세요 !\n* 압축 옵션에 따라 압축률이 달라질 수 있습니다."
     }
 };
 
 const FORMAT_OPTIONS = ['MP4', 'WebM', 'MKV', 'GIF'];
 const RESOLUTION_OPTIONS = ['Original', '4K', '1080p', '720p', '480p', 'Instagram', 'YouTube', 'Custom'];
+const IMAGE_FORMAT_OPTIONS = ['JPG', 'PNG', 'WEBP'];
 
 // --- Tooltip Helper ---
 const Tooltip = ({ text, theme }: { text: string, theme: 'light' | 'dark' }) => (
@@ -199,6 +214,102 @@ const InterfaceShowcase: React.FC = () => {
     const theme = globalTheme as 'light' | 'dark';
     const t = TRANSLATIONS[language];
 
+    const createVideoSamples = (): VideoFile[] => ([
+        {
+            id: 'v-sample-1',
+            path: 'family_trip_4k_001.mp4',
+            name: 'family_trip_4k_001.mp4',
+            status: 'completed',
+            originalSize: 1240 * 1024 * 1024,
+            compressedSize: 258 * 1024 * 1024,
+            progress: 100,
+        },
+        {
+            id: 'v-sample-2',
+            path: 'kids_school_event_1080p.mp4',
+            name: 'kids_school_event_1080p.mp4',
+            status: 'completed',
+            originalSize: 860 * 1024 * 1024,
+            compressedSize: 176 * 1024 * 1024,
+            progress: 100,
+        },
+        {
+            id: 'v-sample-3',
+            path: 'wedding_highlight_4k.mp4',
+            name: 'wedding_highlight_4k.mp4',
+            status: 'completed',
+            originalSize: 1520 * 1024 * 1024,
+            compressedSize: 320 * 1024 * 1024,
+            progress: 100,
+        },
+        {
+            id: 'v-sample-4',
+            path: 'vacation_sunset_drone.mp4',
+            name: 'vacation_sunset_drone.mp4',
+            status: 'completed',
+            originalSize: 980 * 1024 * 1024,
+            compressedSize: 205 * 1024 * 1024,
+            progress: 100,
+        },
+        {
+            id: 'v-sample-5',
+            path: 'birthday_party_1080p.mp4',
+            name: 'birthday_party_1080p.mp4',
+            status: 'completed',
+            originalSize: 740 * 1024 * 1024,
+            compressedSize: 154 * 1024 * 1024,
+            progress: 100,
+        },
+    ]);
+
+    const createImageSamples = (): VideoFile[] => ([
+        {
+            id: 'i-sample-1',
+            path: '20211219_145249.jpg',
+            name: '20211219_145249.jpg',
+            status: 'completed',
+            originalSize: Math.round(3.17 * 1024 * 1024),
+            compressedSize: Math.round(0.98 * 1024 * 1024),
+            progress: 100,
+        },
+        {
+            id: 'i-sample-2',
+            path: '20211219_145238.jpg',
+            name: '20211219_145238.jpg',
+            status: 'completed',
+            originalSize: Math.round(2.95 * 1024 * 1024),
+            compressedSize: Math.round(0.86 * 1024 * 1024),
+            progress: 100,
+        },
+        {
+            id: 'i-sample-3',
+            path: '20211219_145215.jpg',
+            name: '20211219_145215.jpg',
+            status: 'completed',
+            originalSize: Math.round(3.18 * 1024 * 1024),
+            compressedSize: Math.round(0.90 * 1024 * 1024),
+            progress: 100,
+        },
+        {
+            id: 'i-sample-4',
+            path: '20211219_103810.jpg',
+            name: '20211219_103810.jpg',
+            status: 'completed',
+            originalSize: Math.round(2.69 * 1024 * 1024),
+            compressedSize: Math.round(0.82 * 1024 * 1024),
+            progress: 100,
+        },
+        {
+            id: 'i-sample-5',
+            path: '20211219_103808.jpg',
+            name: '20211219_103808.jpg',
+            status: 'completed',
+            originalSize: Math.round(3.05 * 1024 * 1024),
+            compressedSize: Math.round(0.95 * 1024 * 1024),
+            progress: 100,
+        },
+    ]);
+
     const [files, setFiles] = useState<VideoFile[]>([]);
     const [settings, setSettings] = useState<CompressionSettings>({
         format: 'MP4',
@@ -213,12 +324,21 @@ const InterfaceShowcase: React.FC = () => {
         enableTurbo: false,
         parallelLimit: 2,
         outputMode: 'Same',
-        useHighEfficiencyCodec: true,
+        useHighEfficiencyCodec: false,
+        imageFormat: 'JPG',
+        imageQuality: 80,
     });
+    const [processingMode, setProcessingMode] = useState<'video' | 'image'>('video');
     const [isProcessing, setIsProcessing] = useState(false);
     const [totalProgress, setTotalProgress] = useState(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const processingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    useEffect(() => {
+        setFiles(processingMode === 'video' ? createVideoSamples() : createImageSamples());
+        setIsProcessing(false);
+        setTotalProgress(0);
+    }, [processingMode]);
 
     // --- Mock Handlers ---
     const formatSize = (bytes: number) => {
@@ -289,14 +409,49 @@ const InterfaceShowcase: React.FC = () => {
         setSettings(prev => ({ ...prev, ...partial }));
     };
 
+    const subtitleLines = t.showcase_subtitle.split('\n');
+
     return (
-        <section id="features" className="pt-16 pb-8 lg:pt-24 lg:pb-32 relative overflow-hidden bg-[var(--bg-color)] transition-colors duration-300">
+        <section id="features" className="pt-16 pb-8 lg:pt-24 lg:pb-32 relative overflow-hidden bg-[var(--bg-secondary)] border-y border-[var(--card-border)] transition-colors duration-300">
             {/* Page Header */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center mb-16 space-y-4">
+            <div className="max-w-[1350px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center mb-16 space-y-4">
                 <h2 className={`text-4xl md:text-5xl font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'} tracking-tight`}>
                     {t.showcase_title_1}<span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8b5cf6] to-cyan-400">{t.showcase_title_2}</span>
                 </h2>
-                <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-lg font-medium tracking-tight`}>{t.showcase_subtitle}</p>
+                <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} text-lg font-medium tracking-tight`}>
+                    <span>{subtitleLines[0]}</span>
+                    {subtitleLines[1] && (
+                        <>
+                            <br />
+                            <span className={`text-sm ${theme === 'dark' ? 'text-slate-500' : 'text-slate-500'} opacity-80`}>
+                                {subtitleLines[1]}
+                            </span>
+                        </>
+                    )}
+                </p>
+                <div className="flex items-center justify-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setProcessingMode('video')}
+                        className={`px-4 py-2 rounded-xl text-xs font-black border transition-all ${processingMode === 'video'
+                            ? 'bg-[#8b5cf6] border-[#8b5cf6] text-white'
+                            : `${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-white border-gray-200 text-gray-700'}`}`}
+                    >
+                        {language === 'ko' ? '영상 샘플 보기' : 'Video Samples'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setProcessingMode('image')}
+                        className={`px-4 py-2 rounded-xl text-xs font-black border transition-all ${processingMode === 'image'
+                            ? 'bg-[#8b5cf6] border-[#8b5cf6] text-white'
+                            : `${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-white border-gray-200 text-gray-700'}`}`}
+                    >
+                        {language === 'ko' ? '이미지 샘플 보기' : 'Image Samples'}
+                    </button>
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${theme === 'dark' ? 'bg-slate-800 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
+                        {language === 'ko' ? '샘플 데이터' : 'Sample Data'}
+                    </span>
+                </div>
             </div>
 
             {/* Main Window Shell - Scaled for Mobile */}
@@ -351,12 +506,16 @@ const InterfaceShowcase: React.FC = () => {
                                     onClick={() => fileInputRef.current?.click()}
                                     className={`group relative flex flex-col items-center justify-center p-8 border-2 border-dashed ${theme === 'dark' ? 'border-slate-700 bg-slate-900' : 'border-gray-300 bg-white'} rounded-2xl hover:border-[#8b5cf6] transition-all cursor-pointer shadow-sm hover:shadow-md h-48 shrink-0`}
                                 >
-                                    <input type="file" ref={fileInputRef} className="hidden" multiple onChange={handleFileChange} accept="video/*" />
+                                    <input type="file" ref={fileInputRef} className="hidden" multiple onChange={handleFileChange} accept={processingMode === 'video' ? 'video/*' : 'image/*'} />
                                     <div className="w-12 h-12 mb-4 rounded-full bg-purple-50 dark:bg-purple-900/20 text-[#8b5cf6] flex items-center justify-center group-hover:scale-110 transition-transform">
                                         <UploadCloud size={24} />
                                     </div>
-                                    <p className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-gray-600'} font-medium text-center`}>{t.dropText}</p>
-                                    <p className="mt-2 text-xs text-gray-400 dark:text-slate-500 uppercase tracking-widest font-bold">MP4, MOV, MKV, AVI</p>
+                                    <p className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-gray-600'} font-medium text-center`}>
+                                        {processingMode === 'video' ? t.dropText : (language === 'ko' ? '이미지를 이곳에 드래그하여 용량을 줄이세요' : 'Drop your images here to lighten')}
+                                    </p>
+                                    <p className="mt-2 text-xs text-gray-400 dark:text-slate-500 uppercase tracking-widest font-bold">
+                                        {processingMode === 'video' ? 'MP4, MOV, MKV, AVI' : 'JPG, PNG, WEBP'}
+                                    </p>
                                 </div>
 
                                 {/* File Queue */}
@@ -377,7 +536,7 @@ const InterfaceShowcase: React.FC = () => {
                                     <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                                         {files.length === 0 ? (
                                             <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-slate-600 opacity-50">
-                                                <FileVideo size={48} className="mb-2" />
+                                                {processingMode === 'video' ? <FileVideo size={48} className="mb-2" /> : <ImageIcon size={48} className="mb-2" />}
                                                 <p className="text-sm">No files queued</p>
                                             </div>
                                         ) : (
@@ -389,7 +548,9 @@ const InterfaceShowcase: React.FC = () => {
                                                         ) : file.status === 'processing' ? (
                                                             <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-[#8b5cf6] flex items-center justify-center"><Loader2 size={20} className="animate-spin" /></div>
                                                         ) : (
-                                                            <div className={`w-10 h-10 rounded-lg ${theme === 'dark' ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-500'} flex items-center justify-center`}><FileVideo size={20} /></div>
+                                                            <div className={`w-10 h-10 rounded-lg ${theme === 'dark' ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-500'} flex items-center justify-center`}>
+                                                                {processingMode === 'video' ? <FileVideo size={20} /> : <ImageIcon size={20} />}
+                                                            </div>
                                                         )}
                                                     </div>
                                                     <div className="flex-1 min-w-0 mr-2">
@@ -428,7 +589,31 @@ const InterfaceShowcase: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-6">
-                                    {/* Format & Res Card */}
+                                    <div className={`p-4 ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-gray-50 border-gray-100'} rounded-2xl border space-y-3`}>
+                                        <label className={`block text-xs font-semibold ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'} uppercase tracking-wider`}>{t.taskType}</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setProcessingMode('video')}
+                                                className={`rounded-xl px-3 py-2 text-xs font-bold border transition-all ${processingMode === 'video'
+                                                    ? 'bg-white dark:bg-slate-800 border-[#8b5cf6] text-[#8b5cf6]'
+                                                    : 'bg-transparent border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300'}`}
+                                            >
+                                                {t.videoCompression}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setProcessingMode('image')}
+                                                className={`rounded-xl px-3 py-2 text-xs font-bold border transition-all ${processingMode === 'image'
+                                                    ? 'bg-white dark:bg-slate-800 border-[#8b5cf6] text-[#8b5cf6]'
+                                                    : 'bg-transparent border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300'}`}
+                                            >
+                                                {t.imageCompression}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {processingMode === 'video' && (
                                     <div className={`p-4 ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-gray-50 border-gray-100'} rounded-2xl border space-y-4`}>
                                         <div className="grid grid-cols-2 gap-4">
                                             <section>
@@ -474,6 +659,36 @@ const InterfaceShowcase: React.FC = () => {
                                             </section>
                                         </div>
                                     </div>
+                                    )}
+
+                                    {processingMode === 'image' && (
+                                        <div className={`p-4 ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-gray-50 border-gray-100'} rounded-2xl border space-y-4`}>
+                                            <div className="flex items-center gap-2">
+                                                <ImageIcon size={14} className="text-[#8b5cf6]" />
+                                                <label className={`text-xs font-semibold ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'} uppercase tracking-wider`}>{t.imageSettings}</label>
+                                            </div>
+                                            <section>
+                                                <label className={`block text-xs font-semibold ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'} mb-2 uppercase tracking-wider`}>{t.outputFormat}</label>
+                                                <div className="relative">
+                                                    <select
+                                                        className={`w-full ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-200 text-gray-900'} border text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-[#8b5cf6] outline-none transition-all appearance-none cursor-pointer font-bold`}
+                                                        value={settings.imageFormat}
+                                                        onChange={(e) => updateSettings({ imageFormat: e.target.value as CompressionSettings['imageFormat'] })}
+                                                    >
+                                                        {IMAGE_FORMAT_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                                    </select>
+                                                    <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 ${theme === 'dark' ? 'text-slate-500' : 'text-gray-400'} pointer-events-none`} size={16} />
+                                                </div>
+                                            </section>
+                                            <section>
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <label className={`text-xs font-semibold ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'} uppercase tracking-wider`}>{t.imageQuality}</label>
+                                                    <span className="text-xs font-bold px-2 py-0.5 bg-[#8b5cf6] text-white rounded-full">{settings.imageQuality}</span>
+                                                </div>
+                                                <input type="range" min="1" max="100" step="1" value={settings.imageQuality} onChange={(e) => updateSettings({ imageQuality: parseInt(e.target.value) })} className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#8b5cf6]" />
+                                            </section>
+                                        </div>
+                                    )}
 
                                     {/* Output Destination Selection Card */}
                                     <div className={`p-4 ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-gray-50 border-gray-100'} rounded-2xl border transition-colors`}>
@@ -492,7 +707,7 @@ const InterfaceShowcase: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* Compression Slider Section */}
+                                    {processingMode === 'video' && (
                                     <section className={`p-4 ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-gray-50 border-gray-100'} rounded-2xl border transition-colors`}>
                                         <div className="flex justify-between items-center mb-4">
                                             <label className={`text-xs font-semibold ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'} uppercase tracking-wider flex items-center gap-2`}><Sliders size={14} /> {t.quality}</label>
@@ -528,8 +743,10 @@ const InterfaceShowcase: React.FC = () => {
                                             <span>{t.highCompression}</span>
                                         </div>
                                     </section>
+                                    )}
 
-                                    {/* Advanced Section */}
+                                    {processingMode === 'video' && (
+                                    <>
                                     <div className="flex items-center gap-2 mt-4 mb-2">
                                         <Sparkles className="text-amber-500" size={16} />
                                         <h3 className={`text-sm font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-gray-700'}`}>{t.advanced}</h3>
@@ -584,6 +801,32 @@ const InterfaceShowcase: React.FC = () => {
                                             <input type="checkbox" checked={settings.moveToTrash} onChange={(e) => updateSettings({ moveToTrash: e.target.checked })} className="w-4 h-4 rounded text-[#8b5cf6] focus:ring-0" />
                                         </label>
                                     </div>
+                                    </>
+                                    )}
+
+                                    {processingMode === 'image' && (
+                                        <div className="grid grid-cols-1 gap-3 pb-8">
+                                            <div className={`group flex items-center justify-between p-3 ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'} rounded-xl border`}>
+                                                <div className="flex items-center gap-3">
+                                                    <Sparkles size={16} className="text-purple-500" />
+                                                    <div className="flex items-center gap-1"><span className={`text-sm font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-gray-700'}`}>{t.parallel}</span><Tooltip text={t.parallelTip} theme={theme} /></div>
+                                                </div>
+                                                <select value={settings.parallelLimit} onChange={(e) => updateSettings({ parallelLimit: parseInt(e.target.value) })} className={`text-xs font-bold rounded p-1 ${theme === 'dark' ? 'bg-slate-800 text-slate-200' : 'bg-gray-50 text-gray-700'}`}>
+                                                    <option value={1}>1</option>
+                                                    <option value={2}>2</option>
+                                                    <option value={4}>4</option>
+                                                    <option value={8}>8</option>
+                                                </select>
+                                            </div>
+                                            <label className={`group flex items-center justify-between p-3 ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'} rounded-xl hover:border-red-500 transition-all cursor-pointer border`}>
+                                                <div className="flex items-center gap-3">
+                                                    <Trash2 size={16} className={`${theme === 'dark' ? 'text-slate-500' : 'text-gray-400'} group-hover:text-red-500`} />
+                                                    <span className={`text-sm font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-gray-700'}`}>{t.moveToTrash}</span>
+                                                </div>
+                                                <input type="checkbox" checked={settings.moveToTrash} onChange={(e) => updateSettings({ moveToTrash: e.target.checked })} className="w-4 h-4 rounded text-[#8b5cf6] focus:ring-0" />
+                                            </label>
+                                        </div>
+                                    )}
 
                                     {/* Legal Link */}
                                     <div className="mt-auto pt-6 pb-4 flex justify-center">
@@ -618,7 +861,7 @@ const InterfaceShowcase: React.FC = () => {
                                     <div className="flex items-center gap-3">
                                         <div className={`w-2.5 h-2.5 rounded-full ${files.length > 0 ? 'bg-green-500 animate-pulse' : (theme === 'dark' ? 'bg-slate-800' : 'bg-gray-300')}`} />
                                         <span className={`text-xs ${theme === 'dark' ? 'text-slate-500' : 'text-gray-400'} font-bold uppercase tracking-wider`}>
-                                            {files.length > 0 ? `${files.length} FILES READY TO LIGHTEN` : "ADD VIDEOS TO BEGIN"}
+                                            {files.length > 0 ? `${files.length} FILES READY TO LIGHTEN` : (processingMode === 'video' ? 'ADD VIDEOS TO BEGIN' : 'ADD IMAGES TO BEGIN')}
                                         </span>
                                     </div>
                                 )}

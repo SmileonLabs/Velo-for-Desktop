@@ -181,6 +181,12 @@ const Home = () => {
     const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
     const [legalModelType, setLegalModelType] = useState<'privacy' | 'terms' | 'contact'>('privacy');
     const [isFlashing, setIsFlashing] = useState(false);
+    const heroBeforeSize = '1.2 GB';
+    const heroAfterSize = '320 MB';
+    const heroBeforeMb = 1200;
+    const heroAfterMb = 320;
+    const heroReduction = `-${Math.round(((heroBeforeMb - heroAfterMb) / heroBeforeMb) * 100)}%`;
+    const heroSavedAmount = '320MB';
 
     useEffect(() => {
         if (isFlashing) {
@@ -317,81 +323,107 @@ const Home = () => {
 
             <main className="relative">
                 {/* Hero Section */}
-                <section className="relative pt-32 pb-24 px-6 overflow-hidden">
+                <section className="relative pt-24 pb-20 md:pt-32 md:pb-28 lg:pt-48 lg:pb-40 px-6 overflow-hidden">
                     <div className="absolute top-0 -left-20 w-72 h-72 blur-[120px] rounded-full bg-indigo-600/10 dark:bg-indigo-600/20"></div>
                     <div className="absolute bottom-0 -right-20 w-72 h-72 blur-[120px] rounded-full bg-purple-600/10 dark:bg-purple-600/20"></div>
-
-                    <div className="max-w-7xl mx-auto text-center relative z-10">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="inline-flex items-center gap-2 border px-6 py-2 rounded-full text-xs md:text-sm font-black mb-10 md:mb-12 uppercase tracking-wide bg-white dark:bg-white/5 border-indigo-500/20 text-indigo-600 dark:text-indigo-400 shadow-sm"
-                        >
-                            {t('hero.badge_new')}
-                        </motion.div>
-
-                        <motion.h1
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1, duration: 0.8 }}
-                            className="text-4xl sm:text-6xl md:text-8xl font-black leading-[1.05] md:leading-[1.1] mb-8 md:mb-10 text-[var(--text-color)] tracking-tighter"
-                        >
-                            {t('hero.title_new_1')} <br />
-                            <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 dark:from-indigo-400 dark:via-purple-400 dark:to-indigo-400 bg-clip-text text-transparent">
-                                {t('hero.title_new_2')}
-                            </span>
-                        </motion.h1>
-
-                        <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2 }}
-                            className="text-lg sm:text-x md:text-2xl max-w-3xl mx-auto mb-12 md:mb-16 leading-relaxed text-[var(--text-muted)] font-medium px-4"
-                        >
-                            {t('hero.subtitle_new')}
-                        </motion.p>
-
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3 }}
-                            className="flex flex-col items-center justify-center gap-6 mb-16 md:mb-20"
-                        >
-                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 w-full">
-                                <button
-                                    onClick={handleDownloadClick}
-                                    className={`w-full sm:w-auto px-10 py-5 rounded-2xl font-black text-lg md:text-xl transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-3 bg-indigo-600 text-white hover:bg-indigo-500 cursor-pointer shadow-xl shadow-indigo-600/30 ${isFlashing ? 'animate-pulse ring-4 ring-indigo-400 ring-offset-2 ring-offset-[var(--bg-color)]' : ''}`}
+                    <div className="max-w-[1350px] mx-auto relative z-10">
+                        <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-10 lg:gap-12 items-center">
+                            <div className="text-center xl:text-left">
+                                <motion.h1
+                                    initial={{ opacity: 0, y: 30 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.1, duration: 0.8 }}
+                                    className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.08] md:leading-[1.1] mb-6 text-[var(--text-color)] tracking-tighter"
                                 >
-                                    <Zap className="w-6 h-6 fill-current" />
-                                    <div className="flex flex-col items-start leading-none">
-                                        <span>{t('hero.cta_primary')}</span>
-                                        <span className="text-xs font-medium opacity-80 mt-0.5 whitespace-nowrap">Windows Installer (139 MB)</span>
+                                    {t('hero.title_new_1')} <br />
+                                    <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 dark:from-indigo-400 dark:via-purple-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                                        {t('hero.title_new_2')}
+                                    </span>
+                                </motion.h1>
+
+                                <motion.p
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="text-base sm:text-lg md:text-xl max-w-2xl xl:mx-0 mx-auto mb-8 leading-relaxed text-[var(--text-muted)] font-medium"
+                                >
+                                    {t('hero.subtitle_new')}
+                                </motion.p>
+
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.3 }}
+                                    className="flex flex-col items-center xl:items-start gap-5"
+                                >
+                                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full xl:w-auto">
+                                        <button
+                                            onClick={handleDownloadClick}
+                                            className={`w-full sm:w-auto px-8 py-4 rounded-2xl font-black text-base md:text-lg transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-3 bg-indigo-600 text-white hover:bg-indigo-500 cursor-pointer shadow-xl shadow-indigo-600/30 ${isFlashing ? 'animate-pulse ring-4 ring-indigo-400 ring-offset-2 ring-offset-[var(--bg-color)]' : ''}`}
+                                        >
+                                            <Zap className="w-6 h-6 fill-current" />
+                                            <div className="flex flex-col items-start leading-none">
+                                                <span>{t('hero.cta_primary')}</span>
+                                                <span className="text-xs font-medium opacity-80 mt-0.5 whitespace-nowrap">Windows Installer (139 MB)</span>
+                                            </div>
+                                        </button>
+                                        <a
+                                            href="#pricing"
+                                            className="w-full sm:w-auto px-8 py-4 rounded-2xl font-black text-base md:text-lg transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-3 bg-[var(--bg-color)] text-[var(--text-color)] border-2 border-[var(--card-border)] hover:border-indigo-500/50 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer shadow-lg"
+                                        >
+                                            {t('hero.cta_secondary')}
+                                        </a>
                                     </div>
-                                </button>
-                                <a
-                                    href="#pricing"
-                                    className="w-full sm:w-auto px-10 py-5 rounded-2xl font-black text-lg md:text-xl transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-3 bg-[var(--bg-color)] text-[var(--text-color)] border-2 border-[var(--card-border)] hover:border-indigo-500/50 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer shadow-lg"
-                                >
-                                    {t('hero.cta_secondary')}
-                                </a>
+                                    <p className="text-xs md:text-sm font-bold text-[var(--text-muted)] opacity-80">
+                                        ✨ {t('hero.cta_free_trial')}
+                                    </p>
+                                    <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-500/10 px-4 py-1.5 text-[11px] md:text-xs font-bold text-amber-700 dark:text-amber-300">
+                                        {i18n.language.startsWith('ko')
+                                            ? '소중한 동영상 파일, 웹에 함부로 업로드하지 마세요 !'
+                                            : "Don't upload your precious video files carelessly to the web!"}
+                                    </span>
+                                    <div className="flex items-center justify-center gap-3 text-[10px] md:text-xs font-semibold tracking-wide text-[var(--text-muted)] opacity-80">
+                                        <span>{t('hero.windows_only')}</span>
+                                        <span className="w-1 h-1 rounded-full bg-[var(--text-muted)] opacity-30"></span>
+                                        <span className="text-indigo-600 dark:text-indigo-400 opacity-100">{t('hero.macos_waiting')}</span>
+                                    </div>
+                                </motion.div>
                             </div>
-                            <div className="space-y-3">
-                                <p className="text-sm md:text-base font-bold text-[var(--text-muted)] opacity-80">
-                                    ✨ {t('hero.cta_free_trial')}
-                                </p>
-                                <div className="flex items-center justify-center gap-3 text-[11px] md:text-sm font-semibold tracking-wide text-[var(--text-muted)] opacity-80">
-                                    <span>{t('hero.windows_only')}</span>
-                                    <span className="w-1 h-1 rounded-full bg-[var(--text-muted)] opacity-30"></span>
-                                    <span className="text-indigo-600 dark:text-indigo-400 opacity-100">{t('hero.macos_waiting')}</span>
+
+                            <div className="relative w-full max-w-[560px] mx-auto xl:mx-0">
+                                <div className="rounded-[28px] overflow-hidden border border-[var(--card-border)] shadow-2xl bg-[var(--bg-secondary)]">
+                                    <img src="/assets/img/broadcast_img.png" alt="Video compression preview" className="w-full h-[320px] sm:h-[400px] lg:h-[460px] object-cover" />
+                                    <div className="absolute right-4 top-4 rounded-full border border-indigo-300/40 bg-white/90 px-4 py-2 text-sm font-black text-black shadow-md">
+                                        {heroBeforeSize} <span className="mx-1 text-black/70">→</span> <span className="text-indigo-600">{heroAfterSize}</span>
+                                    </div>
+                                </div>
+                                <div className="hidden sm:block absolute left-[-20px] top-[64px] w-[280px] rounded-2xl border border-[var(--card-border)] bg-[var(--bg-color)]/95 backdrop-blur-md shadow-xl p-4">
+                                    <h4 className="text-base font-black text-[var(--text-color)] mb-3">{i18n.language.startsWith('ko') ? '동영상 압축' : 'Compress Your Video'}</h4>
+                                    <div className="space-y-2.5 mb-4">
+                                        <div className="rounded-lg border border-[var(--card-border)] bg-[var(--bg-secondary)] px-3 py-2 text-xs font-semibold text-[var(--text-muted)]">
+                                            {i18n.language.startsWith('ko') ? '품질: 균형 모드' : 'Quality: Balanced'}
+                                        </div>
+                                        <div className="rounded-lg border border-[var(--card-border)] bg-[var(--bg-secondary)] px-3 py-2 text-xs font-semibold text-[var(--text-muted)]">
+                                            {i18n.language.startsWith('ko') ? '해상도: 1920 × 1080' : 'Resolution: 1920 × 1080'}
+                                        </div>
+                                    </div>
+                                    <div className="rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-3 py-2 mb-3">
+                                        <div className="text-[11px] font-black text-indigo-500">{i18n.language.startsWith('ko') ? '예상 절감' : 'Estimated Saving'}</div>
+                                        <div className="text-sm font-black text-[var(--text-color)]">{heroReduction} ({i18n.language.startsWith('ko') ? `약 ${heroSavedAmount} 절약` : `save about ${heroSavedAmount}`})</div>
+                                    </div>
+                                    <button className="w-full rounded-xl bg-indigo-600 text-white text-sm font-black py-3">
+                                        {i18n.language.startsWith('ko') ? '압축 시작하기' : 'Compress Video'}
+                                    </button>
                                 </div>
                             </div>
-                        </motion.div>
-
+                        </div>
                     </div>
                 </section>
 
+                <InterfaceShowcase />
+
                 {/* Recommendation Section (이런 분들에게 추천합니다) */}
-                <section className="py-24 md:py-32 px-6 bg-[var(--bg-secondary)] border-y border-[var(--card-border)] relative overflow-hidden">
+                <section className="py-24 md:py-32 px-6 bg-[var(--bg-color)] border-y border-[var(--card-border)] relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-96 h-96 blur-[150px] rounded-full bg-indigo-600/5 pointer-events-none"></div>
                     <div className="absolute bottom-0 left-0 w-96 h-96 blur-[150px] rounded-full bg-purple-600/5 pointer-events-none"></div>
 
@@ -431,8 +463,6 @@ const Home = () => {
                         </div>
                     </div>
                 </section>
-
-                <InterfaceShowcase />
 
                 {/* Detailed Features Grid */}
                 <section className="pt-16 pb-32 px-6 bg-[var(--bg-secondary)] relative">

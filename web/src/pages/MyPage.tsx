@@ -11,6 +11,7 @@ import { Copy, Download, AlertTriangle, Crown, Clock, Key, Check, Zap, RefreshCw
 import { motion } from 'framer-motion';
 import { useTheme } from '../hooks/useTheme';
 import { themeClass } from '../lib/themeClass';
+import { getDesktopDownloadUrl } from '../lib/desktopRelease';
 
 // Types
 interface License {
@@ -198,8 +199,8 @@ const MyPage = () => {
         window.location.href = finalUrl;
     };
 
-    const handleDownload = () => {
-        const downloadUrl = import.meta.env.VITE_DOWNLOAD_URL;
+    const handleDownload = async () => {
+        const downloadUrl = await getDesktopDownloadUrl() || import.meta.env.VITE_DOWNLOAD_URL;
         if (downloadUrl) {
             window.location.href = downloadUrl;
         } else {
@@ -684,9 +685,9 @@ const MyPage = () => {
                     <div className="space-y-6">
                         <div className="space-y-2">
                             <h4 className={`font-bold ${faqQuestionClass}`}>{t('support.faq_activation_q', 'How do I activate my license?')}</h4>
-                            <p className="text-sm text-[var(--text-muted)] leading-relaxed whitespace-pre-line">
-                                {t('support.faq_activation_a', '1. Enter the license key in the popup that appears when you first launch the VideoLighter desktop app.\n2. Or click the "Register License Key" button at the top right of the app to use it.')}
-                            </p>
+                                <p className="text-sm text-[var(--text-muted)] leading-relaxed whitespace-pre-line">
+                                {t('support.faq_activation_a', '1. Enter your license key from the popup shown at first launch.\n2. You can also open License Management in the desktop app and register there.')}
+                                </p>
                         </div>
                         <div className="w-full h-px bg-[var(--card-border)]" />
                         <div className="space-y-2">
@@ -699,7 +700,7 @@ const MyPage = () => {
                         <div className="space-y-2">
                             <h4 className={`font-bold ${faqQuestionClass}`}>{t('support.faq_device_q', 'Can I use one license on multiple computers?')}</h4>
                             <p className="text-sm text-[var(--text-muted)] leading-relaxed">
-                                {t('support.faq_device_a', 'Basically, one license is valid for one device. However, if you change devices, please contact contact@smileon.app and we will help you re-register.')}
+                                {t('support.faq_device_a', 'One license is valid for one device at a time. If you move PCs, use the PC Move button in My Page to release the current device and activate the new one.')}
                             </p>
                         </div>
                         <div className="w-full h-px bg-[var(--card-border)]" />

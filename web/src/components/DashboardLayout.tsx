@@ -14,6 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
+import { getDesktopDownloadUrl } from '../lib/desktopRelease';
 
 export type Tab = 'overview' | 'purchase' | 'support';
 
@@ -76,8 +77,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         i18n.changeLanguage(lng);
     };
 
-    const handleDownload = () => {
-        const downloadUrl = import.meta.env.VITE_DOWNLOAD_URL;
+    const handleDownload = async () => {
+        const downloadUrl = await getDesktopDownloadUrl() || import.meta.env.VITE_DOWNLOAD_URL;
         if (downloadUrl) {
             window.location.href = downloadUrl;
         } else {
