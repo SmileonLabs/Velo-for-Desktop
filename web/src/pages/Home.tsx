@@ -231,7 +231,7 @@ const Home = () => {
                 : 'This file format is not supported on your OS. (macOS only)');
             return;
         }
-        window.location.href = 'https://github.com/dodokim123/VideoLighter/releases/download/v1.0.1-mac/VideoLighter_1.0.1_universal.dmg';
+        window.location.href = 'https://pub-cabc405cb7a74235aab394987d229813.r2.dev/VideoLighter_1.0.1_universal.dmg';
     };
 
     const handleWindowsDownload = () => {
