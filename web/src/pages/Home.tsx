@@ -28,7 +28,7 @@ interface IconCardProps {
     desc: string;
 }
 
-const Navbar = ({ user, signInWithGoogle, signOut, onDownload }: NavbarProps) => {
+const Navbar = ({ user, signInWithGoogle, signOut }: NavbarProps) => {
     const { t, i18n } = useTranslation();
     const { theme, toggleTheme } = useTheme();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -66,14 +66,12 @@ const Navbar = ({ user, signInWithGoogle, signOut, onDownload }: NavbarProps) =>
                         </div>
                     </div>
                     <div className="flex items-center gap-3 ml-2">
+                        <a href="#download" className="flex items-center gap-2 text-sm font-black px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-all cursor-pointer shadow-lg shadow-indigo-600/20">
+                            <Download className="w-4 h-4" />
+                            {i18n.language.startsWith('ko') ? '다운로드' : 'Download'}
+                        </a>
                         {user ? (
                             <>
-                                {onDownload && (
-                                    <button onClick={onDownload} className="flex items-center gap-2 text-sm font-black px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-all cursor-pointer shadow-lg shadow-indigo-600/20">
-                                        <Download className="w-4 h-4" />
-                                        {t('hero.download')}
-                                    </button>
-                                )}
                                 <Link to="/mypage" className="text-sm font-bold px-4 py-2 transition-all text-[var(--text-muted)] hover:text-[var(--text-color)] cursor-pointer">{t('nav.dashboard')}</Link>
                                 <button onClick={() => signOut()} className="text-sm font-bold px-4 py-2 transition-all text-[var(--text-muted)] hover:text-red-500 cursor-pointer">{t('nav.logout')}</button>
                             </>
@@ -119,14 +117,12 @@ const Navbar = ({ user, signInWithGoogle, signOut, onDownload }: NavbarProps) =>
                     </div>
 
                     <div className="h-[1px] bg-[var(--card-border)] w-full"></div>
+                    <a href="#download" onClick={() => setIsMenuOpen(false)} className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl font-black cursor-pointer">
+                        <Download className="w-5 h-5" />
+                        {i18n.language.startsWith('ko') ? '다운로드' : 'Download'}
+                    </a>
                     {user ? (
                         <>
-                            {onDownload && (
-                                <button onClick={() => { onDownload(); setIsMenuOpen(false); }} className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl font-black cursor-pointer">
-                                    <Download className="w-5 h-5" />
-                                    {t('hero.download')}
-                                </button>
-                            )}
                             <Link to="/mypage" className="text-sm font-bold p-2 text-indigo-500">{t('nav.dashboard')}</Link>
                             <button onClick={() => signOut()} className="text-sm font-bold p-2 text-red-500 text-left cursor-pointer">{t('nav.logout')}</button>
                         </>
@@ -247,6 +243,15 @@ const Home = () => {
         } else {
             alert('Download URL is not configured.');
         }
+    };
+
+    const handleMacDownloadDirect = () => {
+        window.location.href = 'https://pub-cabc405cb7a74235aab394987d229813.r2.dev/VideoLighter_1.0.1_universal.dmg';
+    };
+
+    const handleWindowsDownloadDirect = () => {
+        const downloadUrl = import.meta.env.VITE_DOWNLOAD_URL;
+        if (downloadUrl) window.location.href = downloadUrl;
     };
 
     const handleFreePlanClick = () => {
@@ -747,6 +752,40 @@ const Home = () => {
                     </div>
                 </section>
             </main>
+
+            {/* Download Section */}
+            <section id="download" className="py-20 px-6 border-t border-[var(--card-border)] bg-[var(--bg-secondary)]">
+                <div className="max-w-2xl mx-auto text-center">
+                    <h2 className="text-3xl font-black mb-2 text-[var(--text-color)]">
+                        {i18n.language.startsWith('ko') ? '지금 다운로드' : 'Download Now'}
+                    </h2>
+                    <p className="text-sm text-[var(--text-muted)] mb-10">
+                        {i18n.language.startsWith('ko') ? 'Windows와 macOS 모두 지원합니다.' : 'Available for Windows and macOS.'}
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button
+                            onClick={handleMacDownloadDirect}
+                            className="flex items-center justify-center gap-3 px-8 py-4 bg-[var(--bg-color)] border border-[var(--card-border)] rounded-2xl font-bold text-[var(--text-color)] hover:border-indigo-500/50 hover:shadow-lg transition-all cursor-pointer"
+                        >
+                            <Monitor className="w-5 h-5 text-indigo-500" />
+                            <div className="text-left">
+                                <div className="text-sm font-black">macOS</div>
+                                <div className="text-[10px] text-[var(--text-muted)]">Universal · 126MB</div>
+                            </div>
+                        </button>
+                        <button
+                            onClick={handleWindowsDownloadDirect}
+                            className="flex items-center justify-center gap-3 px-8 py-4 bg-[var(--bg-color)] border border-[var(--card-border)] rounded-2xl font-bold text-[var(--text-color)] hover:border-indigo-500/50 hover:shadow-lg transition-all cursor-pointer"
+                        >
+                            <Monitor className="w-5 h-5 text-indigo-500" />
+                            <div className="text-left">
+                                <div className="text-sm font-black">Windows</div>
+                                <div className="text-[10px] text-[var(--text-muted)]">Windows 10/11 · 139MB</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </section>
 
             {/* Footer */}
             <footer className="py-12 border-t px-6 text-center border-[var(--card-border)] bg-[var(--bg-secondary)] text-[var(--text-muted)]">
