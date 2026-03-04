@@ -77,7 +77,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         i18n.changeLanguage(lng);
     };
 
+    const isMacOS = () =>
+        /Mac/i.test(navigator.userAgent || navigator.platform || '') &&
+        !/iPhone|iPod|iPad/i.test(navigator.userAgent || '');
+
     const handleDownload = async () => {
+        if (isMacOS()) {
+            window.location.href = 'https://pub-cabc405cb7a74235aab394987d229813.r2.dev/VideoLighter_1.0.1_universal.dmg';
+            return;
+        }
         const downloadUrl = await getDesktopDownloadUrl() || import.meta.env.VITE_DOWNLOAD_URL;
         if (downloadUrl) {
             window.location.href = downloadUrl;
@@ -170,13 +178,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
                                 <div className="pl-8 space-y-0.5">
                                     <div className={`flex items-center gap-2 text-xs font-medium ${downloadMetaClass}`}>
-                                        <span>{t('dashboard.windows_label', 'Windows')}</span>
+                                        <span>{isMacOS() ? 'macOS' : t('dashboard.windows_label', 'Windows')}</span>
                                         <span className="w-1 h-1 rounded-full bg-current opacity-50" />
-                                        <span>139Mb</span>
+                                        <span>{isMacOS() ? '126MB' : '139MB'}</span>
                                     </div>
-                                    <p className={`text-[10px] ${downloadMetaClass} ${isDark ? 'opacity-40' : 'opacity-60'}`}>
-                                        {t('dashboard.macos_coming_soon', 'MacOS coming soon')}
-                                    </p>
                                 </div>
                             </div>
                         </button>
