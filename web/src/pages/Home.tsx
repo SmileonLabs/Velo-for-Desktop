@@ -372,26 +372,29 @@ const Home = () => {
                                     className="flex flex-col items-center xl:items-start gap-5"
                                 >
                                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full xl:w-auto">
-                                        <button
-                                            onClick={handleMacDownload}
-                                            className={`w-full sm:w-auto px-8 py-4 rounded-2xl font-black text-base md:text-lg transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-3 bg-indigo-600 text-white hover:bg-indigo-500 cursor-pointer shadow-xl shadow-indigo-600/30 ${isFlashing ? 'animate-pulse ring-4 ring-indigo-400 ring-offset-2 ring-offset-[var(--bg-color)]' : ''}`}
-                                        >
-                                            <Zap className="w-6 h-6 fill-current" />
-                                            <div className="flex flex-col items-start leading-none">
-                                                <span>{t('hero.cta_primary')}</span>
-                                                <span className="text-xs font-medium opacity-80 mt-0.5 whitespace-nowrap">macOS Universal (112 MB)</span>
-                                            </div>
-                                        </button>
-                                        <button
-                                            onClick={handleWindowsDownload}
-                                            className={`w-full sm:w-auto px-8 py-4 rounded-2xl font-black text-base md:text-lg transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-3 bg-slate-700 text-white hover:bg-slate-600 cursor-pointer shadow-xl shadow-slate-700/30 ${isFlashing ? 'animate-pulse ring-4 ring-indigo-400 ring-offset-2 ring-offset-[var(--bg-color)]' : ''}`}
-                                        >
-                                            <Zap className="w-6 h-6 fill-current" />
-                                            <div className="flex flex-col items-start leading-none">
-                                                <span>{t('hero.cta_primary')}</span>
-                                                <span className="text-xs font-medium opacity-80 mt-0.5 whitespace-nowrap">Windows Installer (139 MB)</span>
-                                            </div>
-                                        </button>
+                                        {isMacOS() ? (
+                                            <button
+                                                onClick={handleMacDownload}
+                                                className={`w-full sm:w-auto px-6 py-3 rounded-2xl font-black text-sm md:text-base transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 bg-indigo-600 text-white hover:bg-indigo-500 cursor-pointer shadow-xl shadow-indigo-600/30 ${isFlashing ? 'animate-pulse ring-4 ring-indigo-400 ring-offset-2 ring-offset-[var(--bg-color)]' : ''}`}
+                                            >
+                                                <Zap className="w-5 h-5 fill-current" />
+                                                <div className="flex flex-col items-start leading-none">
+                                                    <span>macOS {i18n.language.startsWith('ko') ? '다운로드' : 'Download'}</span>
+                                                    <span className="text-xs font-medium opacity-80 mt-0.5 whitespace-nowrap">Universal (112 MB)</span>
+                                                </div>
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={handleWindowsDownload}
+                                                className={`w-full sm:w-auto px-6 py-3 rounded-2xl font-black text-sm md:text-base transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 bg-indigo-600 text-white hover:bg-indigo-500 cursor-pointer shadow-xl shadow-indigo-600/30 ${isFlashing ? 'animate-pulse ring-4 ring-indigo-400 ring-offset-2 ring-offset-[var(--bg-color)]' : ''}`}
+                                            >
+                                                <Zap className="w-5 h-5 fill-current" />
+                                                <div className="flex flex-col items-start leading-none">
+                                                    <span>Windows {i18n.language.startsWith('ko') ? '다운로드' : 'Download'}</span>
+                                                    <span className="text-xs font-medium opacity-80 mt-0.5 whitespace-nowrap">Installer (139 MB)</span>
+                                                </div>
+                                            </button>
+                                        )}
                                         <a
                                             href="#pricing"
                                             className="w-full sm:w-auto px-8 py-4 rounded-2xl font-black text-base md:text-lg transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-3 bg-[var(--bg-color)] text-[var(--text-color)] border-2 border-[var(--card-border)] hover:border-indigo-500/50 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer shadow-lg"
