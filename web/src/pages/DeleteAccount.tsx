@@ -80,7 +80,7 @@ const DeleteAccount = () => {
                             {isKo ? '방법 2: 이메일로 삭제 요청' : 'Method 2: Request via Email'}
                         </h2>
                         <div className={`space-y-2 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-                            <p><span className="font-bold">{isKo ? '이메일: ' : 'Email: '}</span><a href="mailto:support@smileon.app" className="text-indigo-500 hover:underline">support@smileon.app</a></p>
+                            <p><span className="font-bold">{isKo ? '이메일: ' : 'Email: '}</span><a href="mailto:contact@smileon.app" className="text-indigo-500 hover:underline">contact@smileon.app</a></p>
                             <p><span className="font-bold">{isKo ? '제목: ' : 'Subject: '}</span>{isKo ? '계정 삭제 요청' : 'Account Deletion Request'}</p>
                             <p><span className="font-bold">{isKo ? '본문: ' : 'Body: '}</span>{isKo ? '가입 시 사용한 이메일 주소를 포함해 주세요.' : 'Please include the email address used to register.'}</p>
                         </div>
@@ -160,8 +160,8 @@ const DeleteAccount = () => {
                     <p className={`text-sm font-medium mb-2 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
                         {isKo ? '추가 문의' : 'Contact'}
                     </p>
-                    <a href="mailto:support@smileon.app" className="text-indigo-500 font-bold hover:underline">
-                        support@smileon.app
+                    <a href="mailto:contact@smileon.app" className="text-indigo-500 font-bold hover:underline">
+                        contact@smileon.app
                     </a>
                     <p className={`text-xs mt-4 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
                         © 2026 Smileon Labs. All rights reserved.
