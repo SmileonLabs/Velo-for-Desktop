@@ -4,8 +4,8 @@ web/node_modules/
 desktop-app/node_modules/
 
 # Design Assets / Prototypes
-videolighter_desktop_design/
-videolighter_web_design/
+velo_desktop_design/
+velo_web_design/
 
 # Tauri / Rust
 desktop-app/src-tauri/target/

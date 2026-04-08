@@ -18,7 +18,7 @@ const PrivacySection: React.FC = () => {
                             <span className="text-primary">stays on your Mac.</span>
                         </h2>
                         <p className="text-lg text-slate-400 mb-8 font-medium leading-relaxed">
-                            We believe video compression shouldn't require uploading gigabytes of sensitive footage to a random cloud server. VideoLighter runs 100% offline.
+                            We believe video compression shouldn't require uploading gigabytes of sensitive footage to a random cloud server. Velo runs 100% offline.
                         </p>
 
                         <div className="grid gap-4">

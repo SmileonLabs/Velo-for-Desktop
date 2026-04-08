@@ -24,4 +24,4 @@ User-agent: ClaudeBot
 Allow: /
 Allow: /llms.txt
 
-Sitemap: https://videolighter.smileon.app/sitemap.xml
+Sitemap: https://velo.smileon.app/sitemap.xml

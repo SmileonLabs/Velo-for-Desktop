@@ -29,7 +29,7 @@ const Hero: React.FC = () => {
                     </div>
 
                     <h1 className="text-5xl lg:text-8xl font-black tracking-tighter text-white leading-[1] uppercase">
-                        VIDEOLIGHTER <br />
+                        VELO <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-400 to-indigo-500">
                             PRO DESKTOP
                         </span>
@@ -69,7 +69,7 @@ const Hero: React.FC = () => {
                         <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-darker">
                             <img
                                 src="https://picsum.photos/800/600?random=1"
-                                alt="VideoLighter Dashboard Interface"
+                                alt="Velo Dashboard Interface"
                                 className="w-full h-full object-cover opacity-60 hover:scale-105 transition-transform duration-700"
                             />
 

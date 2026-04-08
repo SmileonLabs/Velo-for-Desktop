@@ -13,16 +13,16 @@ interface SEOProps {
     structuredData?: Record<string, unknown> | null;
 }
 
-const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://videolighter.smileon.app';
+const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://velo.smileon.app';
 
 const SEO = ({
     title,
     description,
     keywords,
     type = 'website',
-    name = 'VideoLighter',
+    name = 'Velo',
     canonicalPath,
-    image = '/VideoLighter_meta_image.png',
+    image = '/Velo_meta_image.png',
     noindex = false,
     structuredData = null,
 }: SEOProps) => {

@@ -205,7 +205,7 @@ const MyPage = () => {
 
     const handleDownload = async () => {
         if (isMacOS()) {
-            window.location.href = 'https://pub-cabc405cb7a74235aab394987d229813.r2.dev/VideoLighter_1.0.1_universal.dmg';
+            window.location.href = 'https://pub-cabc405cb7a74235aab394987d229813.r2.dev/Velo_1.0.1_universal.dmg';
             return;
         }
         const downloadUrl = await getDesktopDownloadUrl() || import.meta.env.VITE_DOWNLOAD_URL;
@@ -409,7 +409,7 @@ const MyPage = () => {
                         </li>
                         <li className="flex items-start gap-3 text-sm font-medium text-[var(--text-muted)]">
                             <Check className="w-5 h-5 text-indigo-500 shrink-0" />
-                            <span>{t('pricing.free_ft_2', 'Access all VideoLighter features')}</span>
+                            <span>{t('pricing.free_ft_2', 'Access all Velo features')}</span>
                         </li>
                         <li className="flex items-start gap-3 text-sm font-medium text-[var(--text-muted)]">
                             <Check className="w-5 h-5 text-indigo-500 shrink-0" />
@@ -461,7 +461,7 @@ const MyPage = () => {
                         </li>
                         <li className="flex items-start gap-3 text-sm font-medium text-[var(--text-muted)]">
                             <Check className="w-5 h-5 text-indigo-500 shrink-0" />
-                            <span>{t('pricing.free_ft_2', 'Access all VideoLighter features')}</span>
+                            <span>{t('pricing.free_ft_2', 'Access all Velo features')}</span>
                         </li>
                         <li className="flex items-start gap-3 text-sm font-medium text-[var(--text-muted)]">
                             <Check className="w-5 h-5 text-indigo-500 shrink-0" />
@@ -538,7 +538,7 @@ const MyPage = () => {
                             <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
                                 <Check className="w-3 h-3 text-white" />
                             </div>
-                            <span>{t('pricing.free_ft_2', 'Access all VideoLighter features')}</span>
+                            <span>{t('pricing.free_ft_2', 'Access all Velo features')}</span>
                         </li>
                         <li className="flex items-center gap-3 text-sm font-bold text-[var(--text-color)]">
                             <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
@@ -787,7 +787,7 @@ const MyPage = () => {
             userEmail={user?.email}
             onLogout={signOut}
         >
-            <SEO title={`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} | VideoLighter`} canonicalPath="/mypage" noindex />
+            <SEO title={`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} | Velo`} canonicalPath="/mypage" noindex />
 
             {loading ? (
                 <div className="min-h-[500px] flex items-center justify-center">

@@ -46,7 +46,7 @@ const Navbar = ({ user, signOut, onLoginClick }: NavbarProps) => {
                     <div className="w-8 h-8 md:w-10 md:h-10 border rounded-xl md:rounded-2xl flex items-center justify-center transform group-hover:scale-105 transition-transform bg-black border-white/10">
                         <Zap className="w-5 h-5 md:w-6 md:h-6 text-white" />
                     </div>
-                    <span className="text-lg md:text-xl font-bold tracking-tight text-[var(--text-color)]">VideoLighter</span>
+                    <span className="text-lg md:text-xl font-bold tracking-tight text-[var(--text-color)]">Velo</span>
                 </Link>
 
                 <div className="hidden md:flex items-center gap-6">
@@ -218,7 +218,7 @@ const Home = () => {
                 : 'This file format is not supported on your OS. (macOS only)');
             return;
         }
-        window.location.href = 'https://pub-cabc405cb7a74235aab394987d229813.r2.dev/VideoLighter_1.0.1_universal.dmg';
+        window.location.href = 'https://pub-cabc405cb7a74235aab394987d229813.r2.dev/Velo_1.0.1_universal.dmg';
     };
 
     const handleWindowsDownload = () => {
@@ -237,7 +237,7 @@ const Home = () => {
     };
 
     const handleMacDownloadDirect = () => {
-        window.location.href = 'https://pub-cabc405cb7a74235aab394987d229813.r2.dev/VideoLighter_1.0.1_universal.dmg';
+        window.location.href = 'https://pub-cabc405cb7a74235aab394987d229813.r2.dev/Velo_1.0.1_universal.dmg';
     };
 
     const handleWindowsDownloadDirect = () => {
@@ -290,7 +290,7 @@ const Home = () => {
     const structuredData = {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        "name": "VideoLighter",
+        "name": "Velo",
         "description": "Fast offline desktop app to compress videos and images on your PC with no uploads.",
         "applicationCategory": "MultimediaApplication",
         "operatingSystem": "Windows 10, Windows 11",
@@ -794,7 +794,7 @@ const Home = () => {
                             <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-black border border-white/10">
                                 <Zap className="w-5 h-5 text-white" />
                             </div>
-                            <span className="font-bold tracking-tight text-[var(--text-color)]">VideoLighter</span>
+                            <span className="font-bold tracking-tight text-[var(--text-color)]">Velo</span>
                         </div>
 
                         <div className="flex gap-8 text-sm font-medium">

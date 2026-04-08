@@ -37,7 +37,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     const { theme, toggleTheme } = useTheme();
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
-    const logoSrc = theme === 'dark' ? '/VideoLighter_logo_white.svg' : '/VideoLighter_logo_black.svg';
+    const logoSrc = theme === 'dark' ? '/Velo_logo_white.svg' : '/Velo_logo_black.svg';
     const isDark = theme === 'dark';
 
     const userInfoCardClass = isDark
@@ -79,7 +79,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
 
     const handleDownloadMac = () => {
-        window.location.href = 'https://pub-cabc405cb7a74235aab394987d229813.r2.dev/VideoLighter_1.0.1_universal.dmg';
+        window.location.href = 'https://pub-cabc405cb7a74235aab394987d229813.r2.dev/Velo_1.0.1_universal.dmg';
     };
 
     const handleDownloadWindows = async () => {
@@ -113,8 +113,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 {/* Logo */}
                 <div className="h-20 flex items-center px-8 border-b border-[var(--card-border)]">
                     <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                        <img src={logoSrc} alt="VideoLighter" className="w-8 h-8" />
-                        <span className="font-bold text-xl tracking-tight">VideoLighter</span>
+                        <img src={logoSrc} alt="Velo" className="w-8 h-8" />
+                        <span className="font-bold text-xl tracking-tight">Velo</span>
                     </Link>
                     <button
                         onClick={() => setIsSidebarOpen(false)}

@@ -1,11 +1,11 @@
 [package]
-name = "videolighter"
+name = "velo"
 version = "1.0.1"
-description = "VideoLighter Desktop Application"
+description = "Velo Desktop Application"
 edition = "2021"
 
 [lib]
-name = "videolighter_lib"
+name = "velo_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [dependencies]

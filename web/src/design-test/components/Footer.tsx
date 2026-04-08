@@ -12,7 +12,7 @@ const Footer: React.FC = () => {
                             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                                 <Video className="text-white" size={16} />
                             </div>
-                            <span className="text-xl font-black text-white uppercase tracking-tighter shrink-0">VideoLighter</span>
+                            <span className="text-xl font-black text-white uppercase tracking-tighter shrink-0">Velo</span>
                         </div>
                         <p className="text-slate-500 text-xs font-bold uppercase tracking-widest leading-relaxed">
                             Next-generation video compression for modern creators.
@@ -48,7 +48,7 @@ const Footer: React.FC = () => {
 
                 <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="text-sm text-slate-600">
-                        © 2024 VideoLighter Inc. All rights reserved.
+                        © 2024 Velo Inc. All rights reserved.
                     </div>
                     <div className="flex gap-4">
                         <a href="#" className="text-slate-500 hover:text-white transition-colors"><Twitter className="w-5 h-5" /></a>

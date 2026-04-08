@@ -45,7 +45,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, t, lang
                                         <BookOpen size={16} className="text-primary-500" /> 제 1 조 (목적 및 서비스 정의)
                                     </h4>
                                     <p className="text-gray-600 dark:text-slate-400 text-xs pl-6">
-                                        본 소프트웨어(이하 "VideoLighter")는 <b>Smileon Labs</b>(연락처: contact@smileon.app)에서 제공하며, 사용자의 로컬 환경에서 동영상을 효율적으로 압축하기 위한 도구입니다. 본 소프트웨어는 GNU GPL v3 라이선스를 따르는 오픈소스 프로젝트입니다.
+                                        본 소프트웨어(이하 "Velo")는 <b>Smileon Labs</b>(연락처: contact@smileon.app)에서 제공하며, 사용자의 로컬 환경에서 동영상을 효율적으로 압축하기 위한 도구입니다. 본 소프트웨어는 GNU GPL v3 라이선스를 따르는 오픈소스 프로젝트입니다.
                                     </p>
                                 </div>
 
@@ -54,7 +54,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, t, lang
                                         <Globe size={16} className="text-blue-500" /> 제 2 조 (데이터 처리 및 개인정보 보호)
                                     </h4>
                                     <p className="text-gray-600 dark:text-slate-400 text-xs pl-6">
-                                        VideoLighter는 <b>100% 오프라인 처리</b>를 기본 원칙으로 합니다. <br />
+                                        Velo는 <b>100% 오프라인 처리</b>를 기본 원칙으로 합니다. <br />
                                         1. 사용자의 영상 데이터, 메타데이터 및 개인정보는 외부 서버로 전송되지 않습니다. <br />
                                         2. 라이선스 유효성 확인을 위한 최소한의 통신 이외에 어떠한 인터넷 서버와도 연결되지 않습니다.
                                     </p>
@@ -69,7 +69,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, t, lang
                                             [경고: 데이터 유실 주의]
                                         </p>
                                         <p className="text-gray-600 dark:text-slate-400 text-[11px] leading-normal">
-                                            - VideoLighter는 "있는 그대로" 제공되며, 압축 과정 중 발생할 수 있는 원본 파일의 훼손, 손실, 하드웨어 고장에 대하여 <b>Smileon Labs는 어떠한 법적/금전적 책임도 지지 않습니다.</b> <br />
+                                            - Velo는 "있는 그대로" 제공되며, 압축 과정 중 발생할 수 있는 원본 파일의 훼손, 손실, 하드웨어 고장에 대하여 <b>Smileon Labs는 어떠한 법적/금전적 책임도 지지 않습니다.</b> <br />
                                             - 특히 '휴지통 이동' 기능 사용 시 발생하는 데이터 삭제 및 복구 불가능성에 대한 책임은 전적으로 사용자에게 있습니다. <br />
                                             - <b>오프라인 처리의 특성상, 개발자는 사용자의 유실된 자료를 복구해 줄 어떠한 기술적 수단이나 의무도 가지고 있지 않습니다.</b>
                                         </p>
@@ -79,9 +79,9 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, t, lang
                                 <div className="space-y-2 pt-4 border-t border-gray-100 dark:border-slate-800 text-[10px] text-gray-400">
                                     <p className="flex items-center gap-1.5 mb-1">
                                         <LinkIcon size={12} />
-                                        GitHub: <a href="https://github.com/SmileonLabs/VideoLighter" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">https://github.com/SmileonLabs/VideoLighter</a>
+                                        GitHub: <a href="https://github.com/SmileonLabs/Velo" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">https://github.com/SmileonLabs/Velo</a>
                                     </p>
-                                    <p>공식 사이트: videolighter.smileon.app</p>
+                                    <p>공식 사이트: velo.smileon.app</p>
                                     <p>© 2026 Smileon Labs. All rights reserved.</p>
                                 </div>
                             </section>
@@ -93,14 +93,14 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, t, lang
                                 <div className="space-y-2">
                                     <h4 className="font-bold text-gray-900 dark:text-white">Article 1 (Service Definition)</h4>
                                     <p className="text-gray-500 dark:text-slate-400 text-xs pl-6">
-                                        VideoLighter is an open-source tool provided by <b>Smileon Labs</b> (contact@smileon.app) for local video compression. This project is distributed under the GNU GPL v3 license.
+                                        Velo is an open-source tool provided by <b>Smileon Labs</b> (contact@smileon.app) for local video compression. This project is distributed under the GNU GPL v3 license.
                                     </p>
                                 </div>
 
                                 <div className="space-y-2">
                                     <h4 className="font-bold text-gray-900 dark:text-white">Article 2 (Data Privacy & Connectivity)</h4>
                                     <p className="text-gray-500 dark:text-slate-400 text-xs pl-6">
-                                        VideoLighter operates 100% offline. <br />
+                                        Velo operates 100% offline. <br />
                                         1. No video data or metadata is ever transmitted to our servers. <br />
                                         2. Except for license validation, the software never connects to the internet.
                                     </p>
@@ -120,9 +120,9 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, t, lang
                                 <div className="pt-4 border-t border-gray-100 dark:border-slate-800 text-[10px] text-gray-400">
                                     <p className="flex items-center gap-1.5 mb-1">
                                         <LinkIcon size={12} />
-                                        GitHub: <a href="https://github.com/SmileonLabs/VideoLighter" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">https://github.com/SmileonLabs/VideoLighter</a>
+                                        GitHub: <a href="https://github.com/SmileonLabs/Velo" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">https://github.com/SmileonLabs/Velo</a>
                                     </p>
-                                    <p>Official Website: videolighter.smileon.app</p>
+                                    <p>Official Website: velo.smileon.app</p>
                                     <p>© 2026 Smileon Labs. All rights reserved.</p>
                                 </div>
                             </section>

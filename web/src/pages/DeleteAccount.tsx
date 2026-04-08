@@ -16,8 +16,8 @@ const DeleteAccount = () => {
     return (
         <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#0a0a0f] text-white' : 'bg-white text-slate-900'}`}>
             <SEO
-                title={isKo ? '계정 삭제 안내 | VideoLighter' : 'Delete Account | VideoLighter'}
-                description={isKo ? 'VideoLighter 계정 삭제 방법 안내' : 'How to delete your VideoLighter account'}
+                title={isKo ? '계정 삭제 안내 | Velo' : 'Delete Account | Velo'}
+                description={isKo ? 'Velo 계정 삭제 방법 안내' : 'How to delete your Velo account'}
                 noindex
             />
 
@@ -63,8 +63,8 @@ const DeleteAccount = () => {
                         </h2>
                         <ol className="space-y-2">
                             {(isKo
-                                ? ['VideoLighter 앱 실행', '설정 메뉴 진입', '계정 삭제 버튼 클릭', '확인 후 삭제 요청 완료']
-                                : ['Launch the VideoLighter app', 'Go to Settings', 'Click Delete Account', 'Confirm to complete the request']
+                                ? ['Velo 앱 실행', '설정 메뉴 진입', '계정 삭제 버튼 클릭', '확인 후 삭제 요청 완료']
+                                : ['Launch the Velo app', 'Go to Settings', 'Click Delete Account', 'Confirm to complete the request']
                             ).map((step, i) => (
                                 <li key={i} className={`flex items-start gap-3 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
                                     <span className="w-6 h-6 rounded-full bg-red-500/20 text-red-500 text-xs font-black flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>

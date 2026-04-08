@@ -20,7 +20,7 @@ i18n
                         "support": "Support"
                     },
                     "hero": {
-                        "badge": "VideoLighter v1.0.0 Release",
+                        "badge": "Velo v1.0.0 Release",
                         "badge_new": "✨ Ultra-Efficient Video Compression",
                         "title_1": "Your Memories,",
                         "title_2": "Forever Light.",
@@ -35,7 +35,7 @@ i18n
                         "cta_primary": "Download Desktop App",
                         "cta_secondary": "View Pricing",
                         "cta_free_trial": "Try it for free first, then purchase.",
-                        "privacy_text": "VideoLighter handles everything locally without server uploads."
+                        "privacy_text": "Velo handles everything locally without server uploads."
                     },
                     "recommend": {
                         "title": "Who is this for?",
@@ -52,7 +52,7 @@ i18n
                     "technology": {
                         "title_1": "Smarter Pixels,",
                         "title_2": "Not Just Fewer.",
-                        "desc": "Traditional compressors blindly remove data. VideoLighter analyzes the perceptual importance of every frame. We preserve texture where human eyes focus.",
+                        "desc": "Traditional compressors blindly remove data. Velo analyzes the perceptual importance of every frame. We preserve texture where human eyes focus.",
                         "feature1_title": "10-Bit Color Pipeline",
                         "feature1_desc": "No banding. Full HDR support for professional phone clips and cinematic masters.",
                         "feature2_title": "Temporal Denoising",
@@ -85,7 +85,7 @@ i18n
                         "free_desc": "Test the compression quality",
                         "free_price": "0",
                         "free_ft_1": "Compress 3 files per day",
-                        "free_ft_2": "Access all VideoLighter features",
+                        "free_ft_2": "Access all Velo features",
                         "free_ft_3": "100% Offline Privacy",
                         "free_limit": "Compress 3 files daily",
                         "free_cta": "Get Started for Free",
@@ -134,10 +134,10 @@ i18n
                         "copy": "Copy",
                         "no_license": "No licenses found.",
                         "buy_product": "Purchase Product",
-                        "buy_product_desc": "Purchase VideoLighter and activate your license.",
+                        "buy_product_desc": "Purchase Velo and activate your license.",
                         "download_app": "Download App",
                         "download_app_version": "Download App v1.0",
-                        "download_desc": "Download VideoLighter v1.0.0 for Windows.",
+                        "download_desc": "Download Velo v1.0.0 for Windows.",
                         "download_not_configured": "Download URL is not configured.",
                         "payment_not_configured": "Payment link is not configured.",
                         "download_now": "Download Now",
@@ -189,7 +189,7 @@ i18n
                         "privacy_title": "Privacy Policy",
                         "terms_title": "Terms of Service",
                         "close": "Close",
-                        "privacy_intro": "VideoLighter (\"Service\") acts on the principle that user data never leaves the device.",
+                        "privacy_intro": "Velo (\"Service\") acts on the principle that user data never leaves the device.",
                         "privacy_sec1_title": "1. Personal & Payment Information",
                         "privacy_sec1_item1": "Collection: Email address and license key for service authentication.",
                         "privacy_sec1_item2": "Payment Processing: All payments are securely encrypted and processed via global partners (Polar/Stripe). We do not directly store or access your credit card information.",
@@ -210,9 +210,9 @@ i18n
                         "terms_sec3_desc": "The software is provided \"as is\". We are not responsible for data loss or system errors during use. Always backup your important files."
                     },
                     "seo": {
-                        "title": "VideoLighter | Compress Videos 80% Smaller — Offline, No Quality Loss",
-                        "description": "VideoLighter compresses videos up to 80% smaller using SVT-AV1 and VP9 engines with no visible quality loss. 100% offline desktop app for Windows and macOS. Preserves 10-bit HDR. Free to try.",
-                        "keywords": "video compressor, image compressor, offline desktop app, local compression, privacy video compression, windows video compressor, mac video compressor, videolighter, SVT-AV1 compressor, VP9 compression, HDR video compressor, reduce video size, compress video without quality loss, HandBrake alternative"
+                        "title": "Velo | Compress Videos 80% Smaller — Offline, No Quality Loss",
+                        "description": "Velo compresses videos up to 80% smaller using SVT-AV1 and VP9 engines with no visible quality loss. 100% offline desktop app for Windows and macOS. Preserves 10-bit HDR. Free to try.",
+                        "keywords": "video compressor, image compressor, offline desktop app, local compression, privacy video compression, windows video compressor, mac video compressor, velo, SVT-AV1 compressor, VP9 compression, HDR video compressor, reduce video size, compress video without quality loss, HandBrake alternative"
                     },
                     "footer": {
                         "contact": "Contact: contact@smileon.app",
@@ -233,7 +233,7 @@ i18n
                         "support": "지원"
                     },
                     "hero": {
-                        "badge": "VideoLighter v1.0.0 정식 출시",
+                        "badge": "Velo v1.0.0 정식 출시",
                         "badge_new": "✨ 초고효율 차세대 영상 압축",
                         "title_1": "당신의 추억은,",
                         "title_2": "언제나 가볍게.",
@@ -248,7 +248,7 @@ i18n
                         "cta_primary": "데스크탑 앱 다운로드",
                         "cta_secondary": "가격 및 요금제",
                         "cta_free_trial": "무료로 먼저 사용해보고 구매하세요",
-                        "privacy_text": "VideoLighter는 서버 전송 없이 모든 과정을 내 컴퓨터에서 처리합니다."
+                        "privacy_text": "Velo는 서버 전송 없이 모든 과정을 내 컴퓨터에서 처리합니다."
                     },
                     "recommend": {
                         "title": "이런 분들에게 추천합니다",
@@ -265,7 +265,7 @@ i18n
                     "technology": {
                         "title_1": "더 똑똑한 화질,",
                         "title_2": "그저 줄이기만 하는 게 아닙니다.",
-                        "desc": "기존 압축 방식은 데이터를 무분별하게 지웁니다. VideoLighter는 프레임별로 사람의 눈이 느끼는 중요도를 분석합니다. 시선이 머무는 곳의 화질은 선명하게 지키면서도 용량은 획기적으로 줄입니다.",
+                        "desc": "기존 압축 방식은 데이터를 무분별하게 지웁니다. Velo는 프레임별로 사람의 눈이 느끼는 중요도를 분석합니다. 시선이 머무는 곳의 화질은 선명하게 지키면서도 용량은 획기적으로 줄입니다.",
                         "feature1_title": "10-bit 컬러 파이프라인",
                         "feature1_desc": "색 깨짐 현상(Banding)이 없습니다. 아이폰 최신 HDR 영상부터 시네마틱 결과물까지 완벽하게 지원합니다.",
                         "feature2_title": "시간축 디노이징 (Temporal Denoising)",
@@ -298,7 +298,7 @@ i18n
                         "free_desc": "압축 화질 및 성능 테스트",
                         "free_price": "0",
                         "free_ft_1": "하루 3개 파일 압축 가능",
-                        "free_ft_2": "VideoLighter 모든 기능 사용",
+                        "free_ft_2": "Velo 모든 기능 사용",
                         "free_ft_3": "100% 오프라인 개인정보 보호",
                         "free_limit": "하루 3개 파일 압축 가능",
                         "free_cta": "지금 바로 시작하기",
@@ -319,7 +319,7 @@ i18n
                         "lifetime_comparison": "외장하드 하나 값보다 저렴합니다",
                         "lifetime_cloud": "매달 내는 클라우드 구독료보다 경제적",
                         "lifetime_cta": "평생 라이선스 구매하기",
-                        "feature_all": "VideoLighter 모든 기능 사용",
+                        "feature_all": "Velo 모든 기능 사용",
                         "feature_privacy": "100% 오프라인 개인정보 보호",
                         "feature_lifetime": "평생 무제한 압축",
                         "btn_current": "현재 사용 중",
@@ -347,7 +347,7 @@ i18n
                         "copy": "복사",
                         "no_license": "보유하신 라이선스가 없습니다.",
                         "buy_product": "제품 구매하기",
-                        "buy_product_desc": "VideoLighter를 구매하고 라이선스를 활성화하세요.",
+                        "buy_product_desc": "Velo를 구매하고 라이선스를 활성화하세요.",
                         "download_app": "앱 다운로드",
                         "download_app_version": "앱 다운로드 v1.0",
                         "download_desc": "Windows용 v1.0.0 정식 버전을 다운로드하세요.",
@@ -402,7 +402,7 @@ i18n
                         "privacy_title": "개인정보 처리방침",
                         "terms_title": "서비스 이용 약관",
                         "close": "닫기",
-                        "privacy_intro": "VideoLighter(\"서비스\")는 사용자의 데이터를 기기 밖으로 유출하지 않는 것을 철칙으로 합니다.",
+                        "privacy_intro": "Velo(\"서비스\")는 사용자의 데이터를 기기 밖으로 유출하지 않는 것을 철칙으로 합니다.",
                         "privacy_sec1_title": "1. 개인정보 및 결제 정보",
                         "privacy_sec1_item1": "수집 항목: 서비스 이용을 위한 이메일 주소 및 라이선스 키",
                         "privacy_sec1_item2": "결제 처리: 모든 결제는 글로벌 파트너사(Polar/Stripe)를 통해 암호화되어 처리되며, 당사는 귀하의 신용카드 정보를 직접 저장하거나 조회하지 않습니다.",
@@ -423,9 +423,9 @@ i18n
                         "terms_sec3_desc": "본 프로그램은 \"있는 그대로\" 제공되며, 서비스 이용 중 발생한 데이터 손실이나 시스템 오류에 대해 직접적인 책임을 지지 않습니다. 중요 파일은 항상 백업을 권장합니다."
                     },
                     "seo": {
-                        "title": "VideoLighter | 동영상 용량 80% 줄이기 — 화질 그대로, 오프라인 압축",
-                        "description": "VideoLighter는 SVT-AV1, VP9 차세대 코덱으로 동영상 용량을 최대 80% 줄입니다. 화질 손실 없음, 100% 오프라인, 아이폰 HDR 완벽 보존. Windows/macOS 무료 체험.",
-                        "keywords": "동영상 압축, 영상 압축 프로그램, 동영상 용량 줄이기, 화질 손실 없는 압축, 이미지 압축, 오프라인 압축, 데스크탑 앱, 비디오라이터, VideoLighter, 아이폰 영상 압축, 4K 영상 압축, HDR 영상 압축, 무료 동영상 압축"
+                        "title": "Velo | 동영상 용량 80% 줄이기 — 화질 그대로, 오프라인 압축",
+                        "description": "Velo는 SVT-AV1, VP9 차세대 코덱으로 동영상 용량을 최대 80% 줄입니다. 화질 손실 없음, 100% 오프라인, 아이폰 HDR 완벽 보존. Windows/macOS 무료 체험.",
+                        "keywords": "동영상 압축, 영상 압축 프로그램, 동영상 용량 줄이기, 화질 손실 없는 압축, 이미지 압축, 오프라인 압축, 데스크탑 앱, Velo, Velo, 아이폰 영상 압축, 4K 영상 압축, HDR 영상 압축, 무료 동영상 압축"
                     },
                     "footer": {
                         "contact": "문의 : contact@smileon.app",

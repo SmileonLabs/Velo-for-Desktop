@@ -467,11 +467,11 @@ const InterfaceShowcase: React.FC = () => {
                                 </div>
                                 <div className="flex flex-col">
                                     <div className="flex items-center gap-2">
-                                        <span className={`text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'} tracking-tighter uppercase`}>VIDEOLIGHTER</span>
+                                        <span className={`text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'} tracking-tighter uppercase`}>VELO</span>
                                         <span className="text-[10px] bg-[#8b5cf6] text-white px-1.5 py-0.5 rounded-full font-bold">PRO</span>
                                     </div>
                                     <div className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-[#8b5cf6] cursor-pointer transition-colors font-medium">
-                                        videolighter.smileon.app <ExternalLink size={10} />
+                                        velo.smileon.app <ExternalLink size={10} />
                                     </div>
                                 </div>
                             </div>

@@ -27,7 +27,7 @@ const Navbar: React.FC = () => {
                         <div className="w-3 h-3 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
                     </div>
                     <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                        VideoLighter
+                        Velo
                     </span>
                 </div>
 

@@ -248,7 +248,7 @@ const AdminPage = () => {
 
   return (
     <div className="min-h-screen bg-[var(--bg-color)] text-[var(--text-color)] p-6 md:p-10">
-      <SEO title="Admin | VideoLighter" canonicalPath="/admin" noindex />
+      <SEO title="Admin | Velo" canonicalPath="/admin" noindex />
 
             <div className="max-w-[1350px] mx-auto space-y-8">
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

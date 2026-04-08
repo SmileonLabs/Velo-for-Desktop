@@ -23,17 +23,17 @@ export const Header: React.FC<HeaderProps> = ({ theme, setTheme, language, setLa
                 <div className="flex flex-col">
                     <div className="flex items-center gap-2">
                         <span className="text-xl font-black text-gray-900 dark:text-white tracking-tighter">
-                            VIDEOLIGHTER
+                            VELO
                         </span>
                         <span className="text-[10px] bg-primary-500 text-white px-1.5 py-0.5 rounded-full font-bold">PRO</span>
                     </div>
                     <a
-                        href="https://videolighter.smileon.app"
+                        href="https://velo.smileon.app"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[10px] text-gray-400 hover:text-primary-500 flex items-center gap-1 transition-colors font-medium"
                     >
-                        videolighter.smileon.app <ExternalLink size={10} />
+                        velo.smileon.app <ExternalLink size={10} />
                     </a>
                 </div>
             </div>

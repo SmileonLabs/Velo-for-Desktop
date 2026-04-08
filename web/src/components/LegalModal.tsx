@@ -154,12 +154,12 @@ const LegalModal = ({ isOpen, onClose, type }: LegalModalProps) => {
                                                 {t('legal.license_policy_title', 'License Policy Repository')}
                                             </h3>
                                             <a
-                                                href="https://github.com/SmileonLabs/VideoLighter"
+                                                href="https://github.com/SmileonLabs/Velo"
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 className="font-mono text-sm text-indigo-600 dark:text-indigo-400 break-all hover:underline"
                                             >
-                                                https://github.com/SmileonLabs/VideoLighter
+                                                https://github.com/SmileonLabs/Velo
                                             </a>
                                         </div>
                                     </div>

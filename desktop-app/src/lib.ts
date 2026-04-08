@@ -257,7 +257,7 @@ export function compressVideo(
 
         // Watermark Logic
         if (options.enableWatermark) {
-            const text = options.watermarkText || 'VideoLighter';
+            const text = options.watermarkText || 'Velo';
             // Simple overlay at bottom-right
             filters.push(`drawtext=text='${text}':x=w-tw-20:y=h-th-20:fontsize=24:fontcolor=white@0.5:shadowcolor=black:shadowx=2:shadowy=2`);
         }

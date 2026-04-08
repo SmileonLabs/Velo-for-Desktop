@@ -170,7 +170,7 @@ export const LicenseStatusModal: React.FC<LicenseStatusModalProps> = ({
                         <RefreshCw size={13} /> {t.refresh}
                     </button>
                     <a
-                        href="https://videolighter.smileon.app/mypage"
+                        href="https://velo.smileon.app/mypage"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="h-10 rounded-xl bg-primary-500 text-white text-xs font-bold inline-flex items-center justify-center gap-1"

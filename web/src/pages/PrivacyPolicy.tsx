@@ -16,8 +16,8 @@ const PrivacyPolicy = () => {
     return (
         <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#0a0a0f] text-white' : 'bg-white text-slate-900'}`}>
             <SEO
-                title={isKo ? '개인정보 처리방침 | VideoLighter' : 'Privacy Policy | VideoLighter'}
-                description={isKo ? 'VideoLighter 개인정보 처리방침' : 'VideoLighter Privacy Policy'}
+                title={isKo ? '개인정보 처리방침 | Velo' : 'Privacy Policy | Velo'}
+                description={isKo ? 'Velo 개인정보 처리방침' : 'Velo Privacy Policy'}
             />
 
             {/* Header */}
@@ -115,8 +115,8 @@ const PrivacyPolicy = () => {
                         </h2>
                         <p className={`leading-relaxed ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
                             {isKo
-                                ? 'VideoLighter 데스크탑 앱은 쿠키를 사용하지 않습니다. 웹사이트는 서비스 개선을 위해 익명화된 방문 통계를 수집할 수 있으나, 이는 개인 식별이 불가능한 정보입니다.'
-                                : 'The VideoLighter desktop app does not use cookies. Our website may collect anonymized visit statistics for service improvement, which cannot be used to identify individuals.'
+                                ? 'Velo 데스크탑 앱은 쿠키를 사용하지 않습니다. 웹사이트는 서비스 개선을 위해 익명화된 방문 통계를 수집할 수 있으나, 이는 개인 식별이 불가능한 정보입니다.'
+                                : 'The Velo desktop app does not use cookies. Our website may collect anonymized visit statistics for service improvement, which cannot be used to identify individuals.'
                             }
                         </p>
                     </section>

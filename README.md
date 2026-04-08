@@ -1,9 +1,9 @@
-# VideoLighter
+# Velo
 
 [![Project License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey)](https://github.com/SmileonLabs/VideoLighter)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey)](https://github.com/SmileonLabs/Velo)
 
-**VideoLighter** is the smartest desktop video optimizer. Keep the visual quality you love while shedding the GBs you don't. Using the next-gen **SVT-AV1** and **VP9** engines, it provides visual parity with the original while reducing size by up to 80%. Everything happens 100% locally on your computer—private, secure, and lightning-fast.
+**Velo** is the smartest desktop video optimizer. Keep the visual quality you love while shedding the GBs you don't. Using the next-gen **SVT-AV1** and **VP9** engines, it provides visual parity with the original while reducing size by up to 80%. Everything happens 100% locally on your computer—private, secure, and lightning-fast.
 
 ---
 
@@ -63,7 +63,7 @@ npm run tauri dev
 
 ## 🇰🇷 한국어 요약 (Korean Summary)
 
-**VideoLighter**는 "보이는 화질 그대로, 용량만 줄이는" 스마트한 데스크탑 동영상 압축 툴입니다.
+**Velo**는 "보이는 화질 그대로, 용량만 줄이는" 스마트한 데스크탑 동영상 압축 툴입니다.
 
 ### 주요 기능
 - **인지 화질 최적화 (Subjective VQ)**: 사람 눈에 민감한 부분을 파악해 원본과 육안상 차이 없는 결과물을 만듭니다.

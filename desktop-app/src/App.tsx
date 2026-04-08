@@ -23,7 +23,7 @@ const App: React.FC = () => {
     const IMAGE_EXTENSIONS = new Set([
         'jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif'
     ]);
-    const APP_UPDATE_META_URL = 'https://videolighter.smileon.app/desktop-version.json';
+    const APP_UPDATE_META_URL = 'https://velo.smileon.app/desktop-version.json';
 
     const getPathExtension = (path: string) => {
         const lastDot = path.lastIndexOf('.');
@@ -141,7 +141,7 @@ const App: React.FC = () => {
                 if (!res.ok) return;
                 const data = await res.json();
                 const latestVersion = String(data?.version ?? '').trim();
-                const downloadUrl = String(data?.downloadUrl ?? 'https://videolighter.smileon.app').trim();
+                const downloadUrl = String(data?.downloadUrl ?? 'https://velo.smileon.app').trim();
                 if (!latestVersion) return;
 
                 if (isNewer(latestVersion, currentVersion)) {

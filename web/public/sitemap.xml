@@ -2,16 +2,16 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://videolighter.smileon.app/</loc>
-    <xhtml:link rel="alternate" hreflang="ko" href="https://videolighter.smileon.app/"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://videolighter.smileon.app/"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://videolighter.smileon.app/"/>
+    <loc>https://velo.smileon.app/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://velo.smileon.app/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://velo.smileon.app/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://velo.smileon.app/"/>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <lastmod>2026-03-04</lastmod>
   </url>
   <url>
-    <loc>https://videolighter.smileon.app/llms.txt</loc>
+    <loc>https://velo.smileon.app/llms.txt</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>

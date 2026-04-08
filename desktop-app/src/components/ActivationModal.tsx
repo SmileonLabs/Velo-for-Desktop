@@ -184,7 +184,7 @@ export const ActivationModal: React.FC<ActivationModalProps> = ({
                 {/* Footer Links */}
                 <div className="mt-10 flex flex-col gap-3">
                     <a
-                        href="https://videolighter.smileon.app/"
+                        href="https://velo.smileon.app/"
                         target="_blank"
                         className={`text-[11px] font-bold ${isDark ? 'text-slate-400' : 'text-gray-400'} hover:text-primary-500 transition-colors flex items-center justify-center gap-1 group`}
                     >

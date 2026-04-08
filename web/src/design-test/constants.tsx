@@ -41,7 +41,7 @@ export const PRESETS: Preset[] = [
 ];
 
 export const PROMPTS = {
-    hero: "A high-end landing page hero section for a desktop app named 'VideoLighter'. Featuring a sleek, minimalist 3D workstation setup with a modern laptop showing a video optimization dashboard.",
+    hero: "A high-end landing page hero section for a desktop app named 'Velo'. Featuring a sleek, minimalist 3D workstation setup with a modern laptop showing a video optimization dashboard.",
     coreTech: "Abstract visual representation of 'Perceptual Quality Optimization'. A split-screen comparison of a video frame; the left side is heavy and pixelated, the right side is crystal clear.",
     interface: "UI/UX design of a desktop video compressor app. Modern Glassmorphism style, translucent panels, clean typography.",
     privacy: "Conceptual icon/graphic for 'Local Offline Processing'. A stylized shield integrated with a hard drive icon.",

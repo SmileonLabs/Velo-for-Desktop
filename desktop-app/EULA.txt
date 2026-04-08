@@ -1,7 +1,7 @@
 [한국어 / Korean]
 
 제 1 조 (목적)
-본 약관은 Smileon Labs(이하 "회사")가 제공하는 VideoLighter 데스크톱 애플리케이션(이하 "소프트웨어")의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
+본 약관은 Smileon Labs(이하 "회사")가 제공하는 Velo 데스크톱 애플리케이션(이하 "소프트웨어")의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
 
 제 2 조 (라이선스 및 이용 권한)
 1. 본 소프트웨어는 GNU General Public License v3.0 (GPL v3)에 따라 배포됩니다.
@@ -27,7 +27,7 @@
 [English]
 
 Article 1 (Purpose)
-These Terms and Conditions govern the relationship between Smileon Labs ("Company") and the user regarding the use of the VideoLighter desktop application ("Software").
+These Terms and Conditions govern the relationship between Smileon Labs ("Company") and the user regarding the use of the Velo desktop application ("Software").
 
 Article 2 (License and Usage Rights)
 1. This Software is distributed under the GNU General Public License v3.0 (GPL v3).
