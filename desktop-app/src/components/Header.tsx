@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    Video, Moon, Sun, KeyRound, ExternalLink
+    Moon, Sun, KeyRound, ExternalLink
 } from 'lucide-react';
 import { Language } from '../types';
 
@@ -17,16 +17,13 @@ export const Header: React.FC<HeaderProps> = ({ theme, setTheme, language, setLa
     return (
         <header className="h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-950 flex items-center justify-between px-6 transition-colors duration-300">
             <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary-500 rounded-xl">
-                    <Video className="text-white" size={20} />
-                </div>
+                <img
+                    src="/Velo-horizontal.png"
+                    alt="Velo"
+                    className="h-7 w-auto dark:invert"
+                />
                 <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                        <span className="text-xl font-black text-gray-900 dark:text-white tracking-tighter">
-                            VELO
-                        </span>
-                        <span className="text-[10px] bg-primary-500 text-white px-1.5 py-0.5 rounded-full font-bold">PRO</span>
-                    </div>
+                    <span className="text-[10px] bg-primary-500 text-white px-1.5 py-0.5 rounded-full font-bold w-fit">PRO</span>
                     <a
                         href="https://velo.smileon.app"
                         target="_blank"

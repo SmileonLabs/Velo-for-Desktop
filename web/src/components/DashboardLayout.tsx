@@ -37,7 +37,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     const { theme, toggleTheme } = useTheme();
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
-    const logoSrc = theme === 'dark' ? '/Velo_logo_white.svg' : '/Velo_logo_black.svg';
     const isDark = theme === 'dark';
 
     const userInfoCardClass = isDark
@@ -112,9 +111,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             >
                 {/* Logo */}
                 <div className="h-20 flex items-center px-8 border-b border-[var(--card-border)]">
-                    <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                        <img src={logoSrc} alt="Velo" className="w-8 h-8" />
-                        <span className="font-bold text-xl tracking-tight">Velo</span>
+                    <Link to="/" className="flex items-center hover:opacity-80 transition-opacity">
+                        <img
+                            src="/Velo-horizontal.png"
+                            alt="Velo"
+                            className={`h-8 w-auto ${isDark ? 'invert' : ''}`}
+                        />
                     </Link>
                     <button
                         onClick={() => setIsSidebarOpen(false)}

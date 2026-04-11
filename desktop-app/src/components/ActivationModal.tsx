@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-    Zap, Lock, Key, CheckCircle, AlertCircle, Loader2, Sparkles, MoveRight, HelpCircle, Languages
+    Lock, Key, CheckCircle, AlertCircle, Loader2, Sparkles, MoveRight, HelpCircle, Languages
 } from 'lucide-react';
 import { Translation, Language } from '../types';
 import { invoke } from '@tauri-apps/api/core';
@@ -108,9 +108,12 @@ export const ActivationModal: React.FC<ActivationModalProps> = ({
                 </div>
 
                 {/* Brand Icon */}
-                <div className={`w-20 h-20 rounded-3xl ${isDark ? 'bg-primary-500/20' : 'bg-primary-50'} flex items-center justify-center mb-6 shadow-inner relative group`}>
-                    <div className="absolute inset-0 bg-primary-500 rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
-                    <Zap className="text-primary-500 relative" size={40} strokeWidth={2.5} />
+                <div className="w-20 h-20 rounded-3xl overflow-hidden flex items-center justify-center mb-6 shadow-inner relative group bg-black">
+                    <img
+                        src="/Velo-square.png"
+                        alt="Velo"
+                        className="w-full h-full object-cover relative"
+                    />
                 </div>
 
                 {/* Typography */}

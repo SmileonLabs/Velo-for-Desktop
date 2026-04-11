@@ -42,11 +42,12 @@ const Navbar = ({ user, signOut, onLoginClick }: NavbarProps) => {
     return (
         <nav className="fixed top-0 left-0 right-0 z-[60] px-4 md:px-6 py-3 md:py-4 transition-all glass border-b border-[var(--card-border)] shadow-sm">
             <div className="max-w-7xl mx-auto flex justify-between items-center">
-                <Link to="/" className="flex items-center gap-2 group cursor-pointer">
-                    <div className="w-8 h-8 md:w-10 md:h-10 border rounded-xl md:rounded-2xl flex items-center justify-center transform group-hover:scale-105 transition-transform bg-black border-white/10">
-                        <Zap className="w-5 h-5 md:w-6 md:h-6 text-white" />
-                    </div>
-                    <span className="text-lg md:text-xl font-bold tracking-tight text-[var(--text-color)]">Velo</span>
+                <Link to="/" className="flex items-center group cursor-pointer">
+                    <img
+                        src="/Velo-horizontal.png"
+                        alt="Velo"
+                        className="h-7 md:h-8 w-auto transform group-hover:scale-105 transition-transform dark:invert"
+                    />
                 </Link>
 
                 <div className="hidden md:flex items-center gap-6">
@@ -790,11 +791,12 @@ const Home = () => {
             <footer className="py-12 border-t px-6 text-center border-[var(--card-border)] bg-[var(--bg-secondary)] text-[var(--text-muted)]">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-black border border-white/10">
-                                <Zap className="w-5 h-5 text-white" />
-                            </div>
-                            <span className="font-bold tracking-tight text-[var(--text-color)]">Velo</span>
+                        <div className="flex items-center">
+                            <img
+                                src="/Velo-horizontal.png"
+                                alt="Velo"
+                                className="h-7 w-auto dark:invert"
+                            />
                         </div>
 
                         <div className="flex gap-8 text-sm font-medium">
