@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    Settings2, VolumeX, Trash2, Sliders, Info,
+    Settings2, Trash2, Sliders, Info,
     Wind, ShieldCheck, Sparkles, Wand2, Monitor, FolderOpen, Zap, Image as ImageIcon
 } from 'lucide-react';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
@@ -521,27 +521,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                             </select>
                         </div>
                     </div>
-
-                    {/* Metadata */}
-                    <label className="group flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl hover:border-primary-500 transition-all cursor-pointer">
-                        <div className="flex items-center gap-3">
-                            <ShieldCheck size={16} className="text-gray-400 group-hover:text-primary-500" />
-                            <div>
-                                <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t.metadata}</span>
-                                <Tooltip text={t.metadataTip} />
-                            </div>
-                        </div>
-                        <input type="checkbox" checked={settings.cleanMetadata} onChange={(e) => updateSettings({ cleanMetadata: e.target.checked })} className="w-4 h-4 rounded text-primary-500 focus:ring-0" />
-                    </label>
-
-                    {/* Audio Toggle */}
-                    <label className="group flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl hover:border-red-500 transition-all cursor-pointer">
-                        <div className="flex items-center gap-3">
-                            <VolumeX size={16} className="text-gray-400 group-hover:text-red-500" />
-                            <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t.removeAudio}</span>
-                        </div>
-                        <input type="checkbox" checked={settings.removeAudio} onChange={(e) => updateSettings({ removeAudio: e.target.checked })} className="w-4 h-4 rounded text-primary-500 focus:ring-0" />
-                    </label>
 
                     {/* Trash Toggle */}
                     <label className="group flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl hover:border-red-500 transition-all cursor-pointer">
