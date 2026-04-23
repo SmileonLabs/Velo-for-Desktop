@@ -21,7 +21,7 @@ machine-uid = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 # 로컬 파일 수신용 HTTP 서버 — 폰이 LAN/Wi-Fi Direct로 파일 전송 시 받는 쪽.
-axum = { version = "0.8", default-features = false, features = ["http1", "tokio"] }
+axum = { version = "0.8", default-features = false, features = ["http1", "tokio", "json"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "fs", "sync", "io-util"] }
 local-ip-address = "0.6"
 sha2 = "0.10"

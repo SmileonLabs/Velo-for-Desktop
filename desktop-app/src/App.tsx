@@ -11,7 +11,6 @@ import { getVersion } from '@tauri-apps/api/app';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { compressVideo, compressImage, getFileInfo } from './lib';
-import { ActivationModal } from './components/ActivationModal';
 import { LicenseStatusModal } from './components/LicenseStatusModal';
 import { LoginModal } from './components/LoginModal';
 import { DeviceManagerModal } from './components/DeviceManagerModal';
@@ -798,20 +797,6 @@ const App: React.FC = () => {
                 language={language}
             />
 
-            <ActivationModal
-                isOpen={showActivation}
-                onClose={() => setShowActivation(false)}
-                onActivated={(licenseKey) => {
-                    setIsActivated(true);
-                    localStorage.setItem('VL_ACTIVATED', 'true');
-                    localStorage.setItem('VL_LICENSE_KEY', licenseKey);
-                    localStorage.setItem('VL_LAST_VERIFY_AT', new Date().toISOString());
-                }}
-                t={TRANSLATIONS[language]}
-                isDark={theme === 'dark'}
-                currentLanguage={language}
-                onLanguageChange={(lang) => setLanguage(lang)}
-            />
             <LicenseStatusModal
                 isOpen={showLicenseStatus}
                 onClose={() => setShowLicenseStatus(false)}
@@ -819,10 +804,12 @@ const App: React.FC = () => {
                 isDark={theme === 'dark'}
                 storedLicenseKey={storedLicenseKey}
             />
+            {/* 로그인 게이트 — 세션 없으면 강제 노출, 닫기 불가. 로그인해야만 앱 진입. */}
             <LoginModal
-                isOpen={showLogin}
+                isOpen={!session || showLogin}
                 onClose={() => setShowLogin(false)}
                 language={language}
+                forced={!session}
             />
             <DeviceManagerModal
                 isOpen={showDevices}
