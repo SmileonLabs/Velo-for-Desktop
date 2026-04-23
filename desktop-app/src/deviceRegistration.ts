@@ -9,6 +9,42 @@ interface SyncServerInfo {
   mdns_name: string | null;
 }
 
+// heartbeat 주기 — 60초. 너무 짧으면 Supabase 쿼터 소모, 너무 길면 폰 UI가 "오프라인"으로 오인.
+const HEARTBEAT_INTERVAL_MS = 60_000;
+
+// 현재 기기의 device_id 캐시 — heartbeat 시 재호출 비용 절감.
+let cachedDeviceId: string | null = null;
+
+async function getDeviceId(): Promise<string> {
+  if (cachedDeviceId) return cachedDeviceId;
+  cachedDeviceId = await invoke<string>('get_machine_id');
+  return cachedDeviceId;
+}
+
+// last_seen_at만 갱신. 전체 upsert 대비 가벼움 (폰이 "실시간 접속" 판정에만 사용).
+export async function touchDeviceHeartbeat(userId: string): Promise<void> {
+  try {
+    const deviceId = await getDeviceId();
+    const { error } = await supabase
+      .from('user_devices')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .eq('device_id', deviceId);
+    if (error) {
+      console.warn('[heartbeat] update failed:', error.message);
+    }
+  } catch (err) {
+    console.warn('[heartbeat] failed:', err);
+  }
+}
+
+// 로그인 세션 시작 시 호출 — 타이머 setInterval 반환. 세션 종료 시 clearInterval 필요.
+export function startHeartbeat(userId: string): ReturnType<typeof setInterval> {
+  return setInterval(() => {
+    void touchDeviceHeartbeat(userId);
+  }, HEARTBEAT_INTERVAL_MS);
+}
+
 // 현재 데스크탑을 Supabase user_devices 테이블에 등록/갱신 + 파일 수신 HTTP 서버 시작.
 //
 // 동작:

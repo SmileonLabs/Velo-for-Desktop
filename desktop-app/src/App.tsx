@@ -16,7 +16,7 @@ import { LicenseStatusModal } from './components/LicenseStatusModal';
 import { LoginModal } from './components/LoginModal';
 import { supabase } from './supabase';
 import type { Session } from '@supabase/supabase-js';
-import { registerDesktopDevice } from './deviceRegistration';
+import { registerDesktopDevice, startHeartbeat, touchDeviceHeartbeat } from './deviceRegistration';
 
 const App: React.FC = () => {
     const PAID_OFFLINE_GRACE_HOURS = 72;
@@ -127,23 +127,35 @@ const App: React.FC = () => {
     }, []);
 
     // Velo 계정 세션 초기 로드 + 상태 변경 실시간 반영.
-    // 세션이 생기는 순간(로그인 직후 또는 앱 재시작 시 기존 세션 복원) user_devices에 등록.
+    // 로그인 시 user_devices 등록 + 60초 heartbeat 시작. 로그아웃 시 heartbeat 정지 (row 유지).
     useEffect(() => {
-        supabase.auth.getSession().then(({ data }) => {
-            setSession(data.session);
-            if (data.session?.user?.id) {
-                void registerDesktopDevice(data.session.user.id);
+        let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+
+        const handleSessionChange = (newSession: Session | null) => {
+            setSession(newSession);
+            if (heartbeatTimer) {
+                clearInterval(heartbeatTimer);
+                heartbeatTimer = null;
             }
-        });
+            if (newSession?.user?.id) {
+                const userId = newSession.user.id;
+                void registerDesktopDevice(userId);
+                // 즉시 1회 + 이후 주기적 heartbeat. registerDesktopDevice 직후라 첫 1회는 과하지만
+                // 등록 실패/지연 시에도 last_seen_at이 살아있도록 안전망.
+                void touchDeviceHeartbeat(userId);
+                heartbeatTimer = startHeartbeat(userId);
+            }
+        };
+
+        supabase.auth.getSession().then(({ data }) => handleSessionChange(data.session));
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, s) => {
-            setSession(s);
-            if (s?.user?.id) {
-                void registerDesktopDevice(s.user.id);
-            }
-        });
-        return () => subscription.unsubscribe();
+        } = supabase.auth.onAuthStateChange((_event, s) => handleSessionChange(s));
+
+        return () => {
+            if (heartbeatTimer) clearInterval(heartbeatTimer);
+            subscription.unsubscribe();
+        };
     }, []);
 
     // OAuth deep link 수신 (velo://auth-callback#access_token=...) — 브라우저에서 구글/애플 로그인
