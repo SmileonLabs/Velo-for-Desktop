@@ -2,6 +2,7 @@ use std::path::Path;
 use std::sync::Mutex;
 
 mod sync_server;
+mod mdns_advertiser;
 
 #[tauri::command]
 fn move_to_trash(path: String) -> Result<(), String> {
@@ -52,10 +53,13 @@ struct SyncServerInfo {
     port: u16,
     local_ip: String,
     save_dir: String,
+    mdns_name: Option<String>,
 }
 
 // 서버는 앱 생애 주기 중 한 번만 시작. 이후 호출은 기존 port 반환.
 static SYNC_SERVER: Mutex<Option<SyncServerInfo>> = Mutex::new(None);
+// mDNS daemon은 drop되면 광고 중단 → 앱 생애 주기 동안 살아있어야 함.
+static MDNS_HANDLE: Mutex<Option<mdns_advertiser::MdnsHandle>> = Mutex::new(None);
 
 // 폰이 파일을 업로드할 수 있도록 로컬 HTTP 서버 시작.
 // 반환값으로 {port, local_ip, save_dir} 받아 user_devices 테이블에 upsert.
@@ -78,10 +82,26 @@ async fn start_sync_server() -> Result<SyncServerInfo, String> {
         .map(|ip| ip.to_string())
         .unwrap_or_else(|_| "127.0.0.1".to_string());
 
+    // mDNS 광고 시작 — 실패해도 앱 다른 기능엔 영향 없음 (Supabase 폴링으로 대체 가능).
+    let device_id = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
+    let device_name = get_device_name();
+    let mdns_name = match mdns_advertiser::start(port, &local_ip, &device_id, &device_name) {
+        Ok(handle) => {
+            let name = handle.full_name().to_string();
+            *MDNS_HANDLE.lock().map_err(|e| e.to_string())? = Some(handle);
+            Some(name)
+        }
+        Err(e) => {
+            eprintln!("[mdns] register failed: {}", e);
+            None
+        }
+    };
+
     let info = SyncServerInfo {
         port,
         local_ip,
         save_dir: save_dir.to_string_lossy().to_string(),
+        mdns_name,
     };
 
     *SYNC_SERVER.lock().map_err(|e| e.to_string())? = Some(info.clone());

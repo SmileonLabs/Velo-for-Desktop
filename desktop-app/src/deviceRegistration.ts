@@ -6,6 +6,7 @@ interface SyncServerInfo {
   port: number;
   local_ip: string;
   save_dir: string;
+  mdns_name: string | null;
 }
 
 // 현재 데스크탑을 Supabase user_devices 테이블에 등록/갱신 + 파일 수신 HTTP 서버 시작.
@@ -34,7 +35,7 @@ export async function registerDesktopDevice(userId: string): Promise<void> {
           app_version: appVersion,
           local_ip: server.local_ip,
           port: server.port,
-          mdns_name: null, // 기능 6(mDNS advertiser)에서 채움
+          mdns_name: server.mdns_name,
           is_receiver: true,
           last_seen_at: new Date().toISOString(),
         },

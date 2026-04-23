@@ -27,6 +27,8 @@ local-ip-address = "0.6"
 sha2 = "0.10"
 hex = "0.4"
 dirs = "5.0"
+# mDNS/Bonjour 광고 — 폰이 같은 LAN에서 "_velo._tcp" 서비스를 검색해 데스크탑 자동 발견
+mdns-sd = "0.13"
 
 [build-dependencies]
 tauri-build = { version = "2.0", features = [] }
