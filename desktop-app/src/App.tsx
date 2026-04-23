@@ -16,6 +16,7 @@ import { LicenseStatusModal } from './components/LicenseStatusModal';
 import { LoginModal } from './components/LoginModal';
 import { supabase } from './supabase';
 import type { Session } from '@supabase/supabase-js';
+import { registerDesktopDevice } from './deviceRegistration';
 
 const App: React.FC = () => {
     const PAID_OFFLINE_GRACE_HOURS = 72;
@@ -125,12 +126,23 @@ const App: React.FC = () => {
         void bootstrap();
     }, []);
 
-    // Velo 계정 세션 초기 로드 + 상태 변경 실시간 반영
+    // Velo 계정 세션 초기 로드 + 상태 변경 실시간 반영.
+    // 세션이 생기는 순간(로그인 직후 또는 앱 재시작 시 기존 세션 복원) user_devices에 등록.
     useEffect(() => {
-        supabase.auth.getSession().then(({ data }) => setSession(data.session));
+        supabase.auth.getSession().then(({ data }) => {
+            setSession(data.session);
+            if (data.session?.user?.id) {
+                void registerDesktopDevice(data.session.user.id);
+            }
+        });
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+        } = supabase.auth.onAuthStateChange((_event, s) => {
+            setSession(s);
+            if (s?.user?.id) {
+                void registerDesktopDevice(s.user.id);
+            }
+        });
         return () => subscription.unsubscribe();
     }, []);
 

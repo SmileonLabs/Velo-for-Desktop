@@ -38,6 +38,64 @@ fn write_binary_file(path: String, bytes: Vec<u8>) -> Result<(), String> {
     std::fs::write(path, bytes).map_err(|e| e.to_string())
 }
 
+#[derive(serde::Serialize)]
+struct DeviceInfo {
+    platform: String,
+    hostname: String,
+}
+
+// 기기 플랫폼과 사용자 표시용 이름을 반환. Supabase user_devices.device_name 용도.
+// macOS는 System Settings의 "ComputerName" (예: "도도의 MacBook Pro")을 우선 사용.
+#[tauri::command]
+fn get_device_info() -> DeviceInfo {
+    let platform = match std::env::consts::OS {
+        "macos" => "macos",
+        "windows" => "windows",
+        "linux" => "linux",
+        other => other,
+    }
+    .to_string();
+
+    let hostname = get_device_name();
+    DeviceInfo { platform, hostname }
+}
+
+fn get_device_name() -> String {
+    #[cfg(target_os = "macos")]
+    {
+        if let Ok(out) = std::process::Command::new("scutil")
+            .args(["--get", "ComputerName"])
+            .output()
+        {
+            let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !s.is_empty() {
+                return s;
+            }
+        }
+        if let Ok(out) = std::process::Command::new("hostname").output() {
+            let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !s.is_empty() {
+                return s;
+            }
+        }
+        return "Mac".to_string();
+    }
+    #[cfg(target_os = "windows")]
+    {
+        return std::env::var("COMPUTERNAME").unwrap_or_else(|_| "Windows PC".to_string());
+    }
+    #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
+    {
+        if let Ok(out) = std::process::Command::new("hostname").output() {
+            let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !s.is_empty() {
+                return s;
+            }
+        }
+        return std::env::var("HOSTNAME").unwrap_or_else(|_| "Linux PC".to_string());
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -53,6 +111,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             move_to_trash,
             get_machine_id,
+            get_device_info,
             show_in_folder,
             write_binary_file
         ])
