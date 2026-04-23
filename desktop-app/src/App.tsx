@@ -14,6 +14,7 @@ import { compressVideo, compressImage, getFileInfo } from './lib';
 import { ActivationModal } from './components/ActivationModal';
 import { LicenseStatusModal } from './components/LicenseStatusModal';
 import { LoginModal } from './components/LoginModal';
+import { DeviceManagerModal } from './components/DeviceManagerModal';
 import { supabase } from './supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerDesktopDevice, startHeartbeat, touchDeviceHeartbeat } from './deviceRegistration';
@@ -58,6 +59,14 @@ const App: React.FC = () => {
     // Velo 계정 세션 — 모바일과 같은 Supabase auth.users 공유
     const [session, setSession] = useState<Session | null>(null);
     const [showLogin, setShowLogin] = useState<boolean>(false);
+    const [showDevices, setShowDevices] = useState<boolean>(false);
+    const [currentMachineId, setCurrentMachineId] = useState<string | null>(null);
+
+    useEffect(() => {
+        void invoke<string>('get_machine_id')
+            .then((id) => setCurrentMachineId(id))
+            .catch(() => setCurrentMachineId(null));
+    }, []);
 
     const isWithinOfflineGrace = (lastVerifyAt: string | null) => {
         if (!lastVerifyAt) return false;
@@ -689,6 +698,7 @@ const App: React.FC = () => {
                 session={session}
                 onLoginClick={() => setShowLogin(true)}
                 onLogoutClick={async () => { await supabase.auth.signOut(); }}
+                onDevicesClick={() => setShowDevices(true)}
             />
             {updateInfo && (
                 <div className="mx-4 mt-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
@@ -790,6 +800,13 @@ const App: React.FC = () => {
                 isOpen={showLogin}
                 onClose={() => setShowLogin(false)}
                 language={language}
+            />
+            <DeviceManagerModal
+                isOpen={showDevices}
+                onClose={() => setShowDevices(false)}
+                userId={session?.user?.id ?? null}
+                language={language}
+                currentMachineId={currentMachineId}
             />
         </div>
     );

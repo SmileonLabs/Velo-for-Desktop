@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    Moon, Sun, KeyRound, ExternalLink, LogIn, LogOut, User
+    Moon, Sun, KeyRound, ExternalLink, LogIn, LogOut, User, Laptop
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { Language } from '../types';
@@ -15,11 +15,12 @@ interface HeaderProps {
     session: Session | null;
     onLoginClick: () => void;
     onLogoutClick: () => void;
+    onDevicesClick: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
     theme, setTheme, language, setLanguage, onLicenseButtonClick, isActivated,
-    session, onLoginClick, onLogoutClick,
+    session, onLoginClick, onLogoutClick, onDevicesClick,
 }) => {
     const userEmail = session?.user?.email ?? null;
     return (
@@ -65,6 +66,13 @@ export const Header: React.FC<HeaderProps> = ({
                 {/* Velo 계정 로그인 / 프로필 — 모바일에서 가입한 계정으로 로그인 */}
                 {userEmail ? (
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={onDevicesClick}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-2 text-xs font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                            title={language === 'ko' ? '내 기기' : 'My devices'}
+                        >
+                            <Laptop size={14} />
+                        </button>
                         <div className="inline-flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-slate-800 px-3 py-2 text-xs font-medium text-gray-700 dark:text-slate-200">
                             <User size={14} />
                             <span className="max-w-[160px] truncate">{userEmail}</span>
