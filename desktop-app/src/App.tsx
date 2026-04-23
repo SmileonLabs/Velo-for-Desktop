@@ -804,12 +804,12 @@ const App: React.FC = () => {
                 isDark={theme === 'dark'}
                 storedLicenseKey={storedLicenseKey}
             />
-            {/* 로그인 게이트 — 세션 없으면 강제 노출, 닫기 불가. 로그인해야만 앱 진입. */}
+            {/* 테스트 기간 — 로그인 없이도 진입 가능. Header의 "Velo 로그인" 버튼 눌렀을 때만 모달 표시. */}
             <LoginModal
-                isOpen={!session || showLogin}
+                isOpen={showLogin}
                 onClose={() => setShowLogin(false)}
                 language={language}
-                forced={!session}
+                forced={false}
             />
             <DeviceManagerModal
                 isOpen={showDevices}
