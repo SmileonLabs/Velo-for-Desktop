@@ -1,7 +1,8 @@
 import React from 'react';
 import {
-    Moon, Sun, KeyRound, ExternalLink
+    Moon, Sun, KeyRound, ExternalLink, LogIn, LogOut, User
 } from 'lucide-react';
+import type { Session } from '@supabase/supabase-js';
 import { Language } from '../types';
 
 interface HeaderProps {
@@ -11,9 +12,16 @@ interface HeaderProps {
     setLanguage: (l: Language) => void;
     onLicenseButtonClick: () => void;
     isActivated: boolean;
+    session: Session | null;
+    onLoginClick: () => void;
+    onLogoutClick: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ theme, setTheme, language, setLanguage, onLicenseButtonClick, isActivated }) => {
+export const Header: React.FC<HeaderProps> = ({
+    theme, setTheme, language, setLanguage, onLicenseButtonClick, isActivated,
+    session, onLoginClick, onLogoutClick,
+}) => {
+    const userEmail = session?.user?.email ?? null;
     return (
         <header className="h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-950 flex items-center justify-between px-6 transition-colors duration-300">
             <div className="flex items-center gap-3">
@@ -51,6 +59,31 @@ export const Header: React.FC<HeaderProps> = ({ theme, setTheme, language, setLa
                     >
                         <KeyRound size={14} />
                         {language === 'ko' ? '라이센스 관리' : 'License Management'}
+                    </button>
+                )}
+
+                {/* Velo 계정 로그인 / 프로필 — 모바일에서 가입한 계정으로 로그인 */}
+                {userEmail ? (
+                    <div className="flex items-center gap-2">
+                        <div className="inline-flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-slate-800 px-3 py-2 text-xs font-medium text-gray-700 dark:text-slate-200">
+                            <User size={14} />
+                            <span className="max-w-[160px] truncate">{userEmail}</span>
+                        </div>
+                        <button
+                            onClick={onLogoutClick}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-2 text-xs font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                            title={language === 'ko' ? '로그아웃' : 'Sign out'}
+                        >
+                            <LogOut size={14} />
+                        </button>
+                    </div>
+                ) : (
+                    <button
+                        onClick={onLoginClick}
+                        className="inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                    >
+                        <LogIn size={14} />
+                        {language === 'ko' ? 'Velo 로그인' : 'Sign in'}
                     </button>
                 )}
 

@@ -13,7 +13,9 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { compressVideo, compressImage, getFileInfo } from './lib';
 import { ActivationModal } from './components/ActivationModal';
 import { LicenseStatusModal } from './components/LicenseStatusModal';
+import { LoginModal } from './components/LoginModal';
 import { supabase } from './supabase';
+import type { Session } from '@supabase/supabase-js';
 
 const App: React.FC = () => {
     const PAID_OFFLINE_GRACE_HOURS = 72;
@@ -51,6 +53,10 @@ const App: React.FC = () => {
         latestVersion: string;
         downloadUrl: string;
     } | null>(null);
+
+    // Velo 계정 세션 — 모바일과 같은 Supabase auth.users 공유
+    const [session, setSession] = useState<Session | null>(null);
+    const [showLogin, setShowLogin] = useState<boolean>(false);
 
     const isWithinOfflineGrace = (lastVerifyAt: string | null) => {
         if (!lastVerifyAt) return false;
@@ -117,6 +123,15 @@ const App: React.FC = () => {
         };
 
         void bootstrap();
+    }, []);
+
+    // Velo 계정 세션 초기 로드 + 상태 변경 실시간 반영
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data }) => setSession(data.session));
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+        return () => subscription.unsubscribe();
     }, []);
 
     useEffect(() => {
@@ -617,6 +632,9 @@ const App: React.FC = () => {
                 setLanguage={setLanguage}
                 onLicenseButtonClick={handleLicenseButtonClick}
                 isActivated={isActivated}
+                session={session}
+                onLoginClick={() => setShowLogin(true)}
+                onLogoutClick={async () => { await supabase.auth.signOut(); }}
             />
             {updateInfo && (
                 <div className="mx-4 mt-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
@@ -713,6 +731,11 @@ const App: React.FC = () => {
                 language={language}
                 isDark={theme === 'dark'}
                 storedLicenseKey={storedLicenseKey}
+            />
+            <LoginModal
+                isOpen={showLogin}
+                onClose={() => setShowLogin(false)}
+                language={language}
             />
         </div>
     );
