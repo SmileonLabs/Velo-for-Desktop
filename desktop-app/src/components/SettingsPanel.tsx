@@ -1,7 +1,8 @@
 import React from 'react';
 import {
     Settings2, Trash2, Sliders, Info,
-    Wind, ShieldCheck, Sparkles, Wand2, Monitor, FolderOpen, Zap, Image as ImageIcon
+    Wind, ShieldCheck, Sparkles, Wand2, Monitor, FolderOpen, Zap,
+    Gem, Scale, Image as ImageIcon
 } from 'lucide-react';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { CompressionSettings, ResolutionPreset, Translation, Language } from '../types';
@@ -352,7 +353,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                                 : 'bg-transparent border-transparent hover:bg-white/50 dark:hover:bg-slate-800/50'
                                 }`}
                         >
-                            <span className="text-xl mb-1">💎</span>
+                            <Gem size={20} className="mb-1 text-primary-500" />
                             <span className="text-[10px] font-bold text-gray-700 dark:text-slate-200">{t.bestQuality}</span>
                         </button>
                         <button
@@ -366,7 +367,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                                 : 'bg-transparent border-transparent hover:bg-white/50 dark:hover:bg-slate-800/50'
                                 }`}
                         >
-                            <span className="text-xl mb-1">⚖️</span>
+                            <Scale size={20} className="mb-1 text-primary-500" />
                             <span className="text-[10px] font-bold text-gray-700 dark:text-slate-200">{t.balanced}</span>
                         </button>
                         <button
@@ -380,7 +381,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                                 : 'bg-transparent border-transparent hover:bg-white/50 dark:hover:bg-slate-800/50'
                                 }`}
                         >
-                            <span className="text-xl mb-1">⚡</span>
+                            <Zap size={20} className="mb-1 text-primary-500" />
                             <span className="text-[10px] font-bold text-gray-700 dark:text-slate-200">{t.smallestSize}</span>
                         </button>
                     </div>
