@@ -3,6 +3,10 @@ use std::sync::Mutex;
 
 mod sync_server;
 mod mdns_advertiser;
+mod sync_store;
+
+use sync_store::SyncStore;
+use std::sync::Arc;
 
 #[tauri::command]
 fn move_to_trash(path: String) -> Result<(), String> {
@@ -60,6 +64,46 @@ struct SyncServerInfo {
 static SYNC_SERVER: Mutex<Option<SyncServerInfo>> = Mutex::new(None);
 // mDNS daemon은 drop되면 광고 중단 → 앱 생애 주기 동안 살아있어야 함.
 static MDNS_HANDLE: Mutex<Option<mdns_advertiser::MdnsHandle>> = Mutex::new(None);
+// SQLite store — 수신 파일 메타데이터 DB. Arc로 sync_server와 공유.
+static SYNC_STORE: Mutex<Option<Arc<SyncStore>>> = Mutex::new(None);
+
+fn ensure_store() -> Result<Arc<SyncStore>, String> {
+    let mut lock = SYNC_STORE.lock().map_err(|e| e.to_string())?;
+    if let Some(store) = &*lock {
+        return Ok(store.clone());
+    }
+    let db_path = dirs::data_dir()
+        .ok_or_else(|| "data dir not found".to_string())?
+        .join("com.smileon.velo")
+        .join("velo-sync.db");
+    let store = Arc::new(SyncStore::open(db_path)?);
+    *lock = Some(store.clone());
+    Ok(store)
+}
+
+// 받은 파일 목록 (최근 200건). 프론트의 ReceivedFilesModal에서 호출.
+#[tauri::command]
+fn list_received_files(limit: Option<i64>) -> Result<Vec<sync_store::ReceivedRecord>, String> {
+    let store = ensure_store()?;
+    store.list_recent(limit.unwrap_or(200))
+}
+
+// 폰이 삭제 안전장치용으로 호출. content_hash 유무만 반환.
+#[tauri::command]
+fn has_received_file(content_hash: String) -> Result<bool, String> {
+    let store = ensure_store()?;
+    store.exists(&content_hash)
+}
+
+// "정리" 플로우 — 데스크탑에서 받은 파일 삭제 (원본 + DB row)
+#[tauri::command]
+fn delete_received_file(content_hash: String) -> Result<(), String> {
+    let store = ensure_store()?;
+    if let Some(record) = store.list_recent(10_000)?.into_iter().find(|r| r.content_hash == content_hash) {
+        let _ = std::fs::remove_file(&record.local_path);
+    }
+    store.delete_by_hash(&content_hash)
+}
 
 // 폰이 파일을 업로드할 수 있도록 로컬 HTTP 서버 시작.
 // 반환값으로 {port, local_ip, save_dir} 받아 user_devices 테이블에 upsert.
@@ -77,7 +121,8 @@ async fn start_sync_server(app: tauri::AppHandle) -> Result<SyncServerInfo, Stri
         .join("Downloads")
         .join("Velo-Sync");
 
-    let port = sync_server::start(save_dir.clone(), app.clone()).await?;
+    let store = ensure_store()?;
+    let port = sync_server::start(save_dir.clone(), app.clone(), store).await?;
     let local_ip = local_ip_address::local_ip()
         .map(|ip| ip.to_string())
         .unwrap_or_else(|_| "127.0.0.1".to_string());
@@ -177,6 +222,9 @@ pub fn run() {
             get_machine_id,
             get_device_info,
             start_sync_server,
+            list_received_files,
+            has_received_file,
+            delete_received_file,
             show_in_folder,
             write_binary_file
         ])

@@ -16,6 +16,9 @@ tauri-plugin-process = "2.0"
 tauri-plugin-opener = "2.0"
 tauri-plugin-fs = "2.0"
 tauri-plugin-deep-link = "2.0"
+# SQLite — 받은 파일 메타데이터 기록 (content_hash, from_device, received_at...)
+# cross-platform: mac/windows/linux 모두 동일 코드.
+rusqlite = { version = "0.32", features = ["bundled"] }
 trash = "5.1"
 machine-uid = "0.2"
 serde = { version = "1.0", features = ["derive"] }

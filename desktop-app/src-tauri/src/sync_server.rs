@@ -10,20 +10,23 @@
 
 use axum::{
     body::Bytes,
-    extract::{DefaultBodyLimit, State},
+    extract::{DefaultBodyLimit, Query, State},
     http::{HeaderMap, StatusCode},
     response::Json,
     routing::{get, post},
     Router,
 };
 use sha2::{Digest, Sha256};
-use std::{net::SocketAddr, path::PathBuf};
+use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc};
 use tauri::{AppHandle, Emitter};
+
+use crate::sync_store::{ReceivedRecord, SyncStore};
 
 #[derive(Clone)]
 struct AppState {
     save_dir: PathBuf,
     app: AppHandle,
+    store: Arc<SyncStore>,
 }
 
 // 프론트로 전달할 수신 이벤트 payload.
@@ -36,15 +39,17 @@ struct FileReceivedEvent {
     received_at: String, // ISO-8601
 }
 
-pub async fn start(save_dir: PathBuf, app: AppHandle) -> Result<u16, String> {
+pub async fn start(save_dir: PathBuf, app: AppHandle, store: Arc<SyncStore>) -> Result<u16, String> {
     tokio::fs::create_dir_all(&save_dir)
         .await
         .map_err(|e| format!("save_dir 생성 실패: {}", e))?;
 
-    let state = AppState { save_dir, app };
+    let state = AppState { save_dir, app, store };
     let app = Router::new()
         .route("/ping", get(ping_handler))
         .route("/upload", post(upload_handler))
+        // 폰이 "이 파일 데스크탑에 있니?" 확인 — 폰 원본 삭제 전 안전장치.
+        .route("/exists", get(exists_handler))
         // 10 GB 상한 — 4K ProRes 장시간 영상도 수용. 실질 상한은 디스크 공간.
         .layer(DefaultBodyLimit::max(10 * 1024 * 1024 * 1024))
         .with_state(state);
@@ -120,6 +125,37 @@ async fn upload_handler(
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("write failed: {}", e)))?;
 
+    // 폰이 보낸 메타데이터 헤더 (옵션) — 없으면 null로 기록.
+    let from_device_id = headers.get("x-velo-device-id")
+        .and_then(|v| v.to_str().ok()).map(String::from);
+    let from_mdns_name = headers.get("x-velo-mdns-name")
+        .and_then(|v| v.to_str().ok()).map(String::from);
+    let phone_asset_id = headers.get("x-velo-asset-id")
+        .and_then(|v| v.to_str().ok()).map(String::from);
+    let media_type = headers.get("x-velo-media-type")
+        .and_then(|v| v.to_str().ok()).map(String::from);
+
+    let received_at_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or(0);
+
+    let record = ReceivedRecord {
+        content_hash: computed_hash.clone(),
+        file_name: safe_name.clone(),
+        file_size: body.len() as i64,
+        media_type,
+        from_device_id,
+        from_mdns_name,
+        phone_asset_id,
+        local_path: path.to_string_lossy().to_string(),
+        received_at_ms,
+    };
+    if let Err(e) = state.store.upsert(&record) {
+        eprintln!("[sync_server] store upsert failed: {}", e);
+        // DB 기록 실패해도 파일은 디스크에 있으니 업로드 자체는 성공 처리.
+    }
+
     // 프론트에 실시간 이벤트 — 토스트 / 수신 리스트 갱신에 사용.
     let event = FileReceivedEvent {
         filename: safe_name.clone(),
@@ -166,6 +202,20 @@ fn days_to_ymd(days_since_epoch: i64) -> (i64, u32, u32) {
     let m = (if mp < 10 { mp + 3 } else { mp - 9 }) as u32;
     let y = if m <= 2 { y + 1 } else { y };
     (y, m, d)
+}
+
+// 폰이 원본 삭제 직전 "이 해시가 데스크탑에 있나?" 확인.
+// 200 OK + { exists: true/false }
+async fn exists_handler(
+    State(state): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let hash = params.get("hash")
+        .ok_or((StatusCode::BAD_REQUEST, "missing hash".to_string()))?
+        .to_lowercase();
+    let exists = state.store.exists(&hash)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(Json(serde_json::json!({ "exists": exists, "hash": hash })))
 }
 
 fn sanitize_filename(name: &str) -> String {
