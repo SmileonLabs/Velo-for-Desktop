@@ -167,6 +167,29 @@ const App: React.FC = () => {
         };
     }, []);
 
+    // 데스크탑이 폰으로부터 파일을 수신할 때마다 Rust에서 emit하는 이벤트.
+    // v1은 콘솔 로그만. 실제 UI(토스트·수신 리스트)는 핵심 파이프라인 완성 후.
+    useEffect(() => {
+        let unlisten: (() => void) | undefined;
+        (async () => {
+            try {
+                const { listen } = await import('@tauri-apps/api/event');
+                unlisten = await listen<{
+                    filename: string;
+                    size: number;
+                    hash: string;
+                    path: string;
+                    received_at: string;
+                }>('velo://file-received', (e) => {
+                    console.log('[velo] file received:', e.payload);
+                });
+            } catch {
+                // Tauri event API 미로드 — dev/web 환경. 무시.
+            }
+        })();
+        return () => { if (unlisten) unlisten(); };
+    }, []);
+
     // OAuth deep link 수신 (velo://auth-callback#access_token=...) — 브라우저에서 구글/애플 로그인
     // 완료 시 Supabase가 우리 앱으로 리다이렉트. URL fragment에서 토큰 추출 → 세션 주입.
     useEffect(() => {

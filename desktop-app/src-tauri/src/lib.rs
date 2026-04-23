@@ -64,7 +64,7 @@ static MDNS_HANDLE: Mutex<Option<mdns_advertiser::MdnsHandle>> = Mutex::new(None
 // 폰이 파일을 업로드할 수 있도록 로컬 HTTP 서버 시작.
 // 반환값으로 {port, local_ip, save_dir} 받아 user_devices 테이블에 upsert.
 #[tauri::command]
-async fn start_sync_server() -> Result<SyncServerInfo, String> {
+async fn start_sync_server(app: tauri::AppHandle) -> Result<SyncServerInfo, String> {
     {
         let lock = SYNC_SERVER.lock().map_err(|e| e.to_string())?;
         if let Some(info) = &*lock {
@@ -77,7 +77,7 @@ async fn start_sync_server() -> Result<SyncServerInfo, String> {
         .join("Downloads")
         .join("Velo-Sync");
 
-    let port = sync_server::start(save_dir.clone()).await?;
+    let port = sync_server::start(save_dir.clone(), app.clone()).await?;
     let local_ip = local_ip_address::local_ip()
         .map(|ip| ip.to_string())
         .unwrap_or_else(|_| "127.0.0.1".to_string());
