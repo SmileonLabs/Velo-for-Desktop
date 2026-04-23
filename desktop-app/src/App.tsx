@@ -134,6 +134,36 @@ const App: React.FC = () => {
         return () => subscription.unsubscribe();
     }, []);
 
+    // OAuth deep link 수신 (velo://auth-callback#access_token=...) — 브라우저에서 구글/애플 로그인
+    // 완료 시 Supabase가 우리 앱으로 리다이렉트. URL fragment에서 토큰 추출 → 세션 주입.
+    useEffect(() => {
+        let unlisten: (() => void) | undefined;
+        (async () => {
+            try {
+                const { onOpenUrl } = await import('@tauri-apps/plugin-deep-link');
+                unlisten = await onOpenUrl((urls) => {
+                    for (const url of urls) {
+                        const idx = url.indexOf('#');
+                        if (idx < 0) continue;
+                        const fragment = url.slice(idx + 1);
+                        const params = new URLSearchParams(fragment);
+                        const accessToken = params.get('access_token');
+                        const refreshToken = params.get('refresh_token');
+                        if (accessToken && refreshToken) {
+                            void supabase.auth.setSession({
+                                access_token: accessToken,
+                                refresh_token: refreshToken,
+                            });
+                        }
+                    }
+                });
+            } catch {
+                // deep link 플러그인 로드 실패 — dev 환경이거나 플러그인 미등록. 무시.
+            }
+        })();
+        return () => { if (unlisten) unlisten(); };
+    }, []);
+
     useEffect(() => {
         const normalize = (v: string) => v.replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
         const isNewer = (latest: string, current: string) => {

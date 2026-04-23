@@ -15,6 +15,7 @@ tauri-plugin-dialog = "2.0"
 tauri-plugin-process = "2.0"
 tauri-plugin-opener = "2.0"
 tauri-plugin-fs = "2.0"
+tauri-plugin-deep-link = "2.0"
 trash = "5.1"
 machine-uid = "0.2"
 serde = { version = "1.0", features = ["derive"] }

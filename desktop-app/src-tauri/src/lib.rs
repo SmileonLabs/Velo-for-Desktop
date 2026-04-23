@@ -46,6 +46,10 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_fs::init())
+        // OAuth 콜백용 custom URL scheme (velo://) 수신 — 브라우저에서 로그인 완료 시
+        // Supabase가 velo://auth-callback#access_token=... 형식으로 리다이렉트.
+        // 프론트에서 @tauri-apps/plugin-deep-link의 onOpenUrl 리스너로 이벤트 받아 세션 주입.
+        .plugin(tauri_plugin_deep_link::init())
         .invoke_handler(tauri::generate_handler![
             move_to_trash,
             get_machine_id,

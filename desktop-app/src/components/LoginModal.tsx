@@ -94,9 +94,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, languag
     setError(null);
     setIsLoading(true);
     try {
-      // Tauri 데스크탑 환경에서 OAuth는 기본 브라우저로 열림. Supabase 콘솔에서 허용 redirect URL에
-      // 데스크탑 앱용 custom scheme (예: velo://auth-callback) 등록 필요 — 후속 기능에서 세팅.
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({ provider });
+      // OAuth는 기본 브라우저에서 진행 → 완료 후 velo://auth-callback#access_token=...로
+      // 앱에 리다이렉트. App.tsx의 onOpenUrl 리스너가 토큰을 받아 세션 주입.
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: 'velo://auth-callback' },
+      });
       if (oauthError) setError(copy.errorOAuth);
     } catch {
       setError(copy.errorOAuth);
