@@ -14,6 +14,7 @@ import { compressVideo, compressImage, getFileInfo } from './lib';
 import { LicenseStatusModal } from './components/LicenseStatusModal';
 import { LoginModal } from './components/LoginModal';
 import { DeviceManagerModal } from './components/DeviceManagerModal';
+import { ReceivedFilesModal, type ReceivedFile } from './components/ReceivedFilesModal';
 import { supabase } from './supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerDesktopDevice, startHeartbeat, touchDeviceHeartbeat } from './deviceRegistration';
@@ -60,6 +61,11 @@ const App: React.FC = () => {
     const [showLogin, setShowLogin] = useState<boolean>(false);
     const [showDevices, setShowDevices] = useState<boolean>(false);
     const [currentMachineId, setCurrentMachineId] = useState<string | null>(null);
+
+    // 폰으로부터 받은 파일 내역 — 수신 이벤트를 누적 (최근 50건 제한).
+    const [receivedFiles, setReceivedFiles] = useState<ReceivedFile[]>([]);
+    const [saveDir, setSaveDir] = useState<string | null>(null);
+    const [showReceived, setShowReceived] = useState<boolean>(false);
 
     useEffect(() => {
         void invoke<string>('get_machine_id')
@@ -166,27 +172,31 @@ const App: React.FC = () => {
         };
     }, []);
 
-    // 데스크탑이 폰으로부터 파일을 수신할 때마다 Rust에서 emit하는 이벤트.
-    // v1은 콘솔 로그만. 실제 UI(토스트·수신 리스트)는 핵심 파이프라인 완성 후.
+    // 데스크탑이 폰으로부터 파일을 수신할 때마다 Rust에서 emit하는 이벤트를 리스트에 누적.
+    // Header에서 배지로 표시 + ReceivedFilesModal에서 내역 확인.
     useEffect(() => {
         let unlisten: (() => void) | undefined;
         (async () => {
             try {
                 const { listen } = await import('@tauri-apps/api/event');
-                unlisten = await listen<{
-                    filename: string;
-                    size: number;
-                    hash: string;
-                    path: string;
-                    received_at: string;
-                }>('velo://file-received', (e) => {
-                    console.log('[velo] file received:', e.payload);
+                unlisten = await listen<ReceivedFile>('velo://file-received', (e) => {
+                    setReceivedFiles((prev) => [e.payload, ...prev].slice(0, 50));
                 });
             } catch {
                 // Tauri event API 미로드 — dev/web 환경. 무시.
             }
         })();
         return () => { if (unlisten) unlisten(); };
+    }, []);
+
+    // 데스크탑 HTTP 서버 기동 + saveDir 캐시. 로그인 여부와 무관하게 수신은 동작.
+    // (로그인 없이 테스트 중일 땐 user_devices 등록은 안 되지만 포트·저장 경로는 필요.)
+    useEffect(() => {
+        void invoke<{ port: number; local_ip: string; save_dir: string; mdns_name: string | null }>(
+            'start_sync_server'
+        )
+            .then((info) => setSaveDir(info.save_dir))
+            .catch((err) => console.warn('[sync] start_sync_server failed', err));
     }, []);
 
     // OAuth deep link 수신 (velo://auth-callback#access_token=...) — 브라우저에서 구글/애플 로그인
@@ -721,6 +731,8 @@ const App: React.FC = () => {
                 onLoginClick={() => setShowLogin(true)}
                 onLogoutClick={async () => { await supabase.auth.signOut(); }}
                 onDevicesClick={() => setShowDevices(true)}
+                onReceivedClick={() => setShowReceived(true)}
+                receivedCount={receivedFiles.length}
             />
             {updateInfo && (
                 <div className="mx-4 mt-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
@@ -817,6 +829,13 @@ const App: React.FC = () => {
                 userId={session?.user?.id ?? null}
                 language={language}
                 currentMachineId={currentMachineId}
+            />
+            <ReceivedFilesModal
+                isOpen={showReceived}
+                onClose={() => setShowReceived(false)}
+                files={receivedFiles}
+                saveDir={saveDir}
+                language={language}
             />
         </div>
     );

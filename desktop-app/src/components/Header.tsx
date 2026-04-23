@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    Moon, Sun, KeyRound, ExternalLink, LogIn, LogOut, User, Laptop
+    Moon, Sun, KeyRound, ExternalLink, LogIn, LogOut, User, Laptop, Inbox
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { Language } from '../types';
@@ -16,11 +16,14 @@ interface HeaderProps {
     onLoginClick: () => void;
     onLogoutClick: () => void;
     onDevicesClick: () => void;
+    onReceivedClick: () => void;
+    receivedCount: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
     theme, setTheme, language, setLanguage, onLicenseButtonClick, isActivated,
     session, onLoginClick, onLogoutClick, onDevicesClick,
+    onReceivedClick, receivedCount,
 }) => {
     const userEmail = session?.user?.email ?? null;
     return (
@@ -45,6 +48,20 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             <div className="flex items-center gap-4">
+                {/* 받은 파일 — 로그인 여부 무관하게 항상 표시. 배지로 수신 건수. */}
+                <button
+                    onClick={onReceivedClick}
+                    className="relative inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-2 text-xs font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                    title={language === 'ko' ? '받은 파일' : 'Received files'}
+                >
+                    <Inbox size={14} />
+                    {receivedCount > 0 && (
+                        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-primary-500 text-[10px] font-bold text-white flex items-center justify-center px-1">
+                            {receivedCount}
+                        </span>
+                    )}
+                </button>
+
                 {!isActivated ? (
                     <button
                         onClick={onLicenseButtonClick}
