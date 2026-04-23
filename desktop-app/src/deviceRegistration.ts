@@ -2,32 +2,49 @@ import { invoke } from '@tauri-apps/api/core';
 import { getVersion } from '@tauri-apps/api/app';
 import { supabase } from './supabase';
 
-// 현재 데스크탑을 Supabase user_devices 테이블에 등록/갱신.
-// - 로그인 성공 시 1회 호출.
-// - 향후 기능 5(HTTP 서버)에서 local_ip, port, mdns_name 필드 추가 예정.
-// - is_receiver=true: 데스크탑은 "받는 쪽" 기기.
+interface SyncServerInfo {
+  port: number;
+  local_ip: string;
+  save_dir: string;
+}
+
+// 현재 데스크탑을 Supabase user_devices 테이블에 등록/갱신 + 파일 수신 HTTP 서버 시작.
+//
+// 동작:
+//   1) Rust start_sync_server 호출 → 랜덤 포트로 axum 서버 띄움 + local IP/save_dir 반환
+//   2) machine_id + 기기 이름 + platform + app version 수집
+//   3) user_devices 테이블에 upsert (is_receiver=true + port + local_ip 포함)
+//
+// 실패 시 앱 나머지 기능엔 영향 없음 — 로깅만 남기고 조용히 넘어감.
 export async function registerDesktopDevice(userId: string): Promise<void> {
-  const machineId = await invoke<string>('get_machine_id');
-  const info = await invoke<{ platform: string; hostname: string }>('get_device_info');
-  const appVersion = await getVersion();
+  try {
+    const server: SyncServerInfo = await invoke('start_sync_server');
+    const machineId = await invoke<string>('get_machine_id');
+    const info = await invoke<{ platform: string; hostname: string }>('get_device_info');
+    const appVersion = await getVersion();
 
-  const { error } = await supabase
-    .from('user_devices')
-    .upsert(
-      {
-        user_id: userId,
-        device_id: machineId,
-        device_name: info.hostname,
-        platform: info.platform,
-        app_version: appVersion,
-        is_receiver: true,
-        last_seen_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id,device_id' },
-    );
+    const { error } = await supabase
+      .from('user_devices')
+      .upsert(
+        {
+          user_id: userId,
+          device_id: machineId,
+          device_name: info.hostname,
+          platform: info.platform,
+          app_version: appVersion,
+          local_ip: server.local_ip,
+          port: server.port,
+          mdns_name: null, // 기능 6(mDNS advertiser)에서 채움
+          is_receiver: true,
+          last_seen_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,device_id' },
+      );
 
-  if (error) {
-    // 치명적 오류 아님 — 동기화 안 써도 앱 다른 기능은 동작. 로깅만 남김.
-    console.warn('[registerDesktopDevice] upsert failed:', error.message);
+    if (error) {
+      console.warn('[registerDesktopDevice] upsert failed:', error.message);
+    }
+  } catch (err) {
+    console.warn('[registerDesktopDevice] failed:', err);
   }
 }

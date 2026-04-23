@@ -1,4 +1,7 @@
 use std::path::Path;
+use std::sync::Mutex;
+
+mod sync_server;
 
 #[tauri::command]
 fn move_to_trash(path: String) -> Result<(), String> {
@@ -42,6 +45,47 @@ fn write_binary_file(path: String, bytes: Vec<u8>) -> Result<(), String> {
 struct DeviceInfo {
     platform: String,
     hostname: String,
+}
+
+#[derive(serde::Serialize, Clone)]
+struct SyncServerInfo {
+    port: u16,
+    local_ip: String,
+    save_dir: String,
+}
+
+// 서버는 앱 생애 주기 중 한 번만 시작. 이후 호출은 기존 port 반환.
+static SYNC_SERVER: Mutex<Option<SyncServerInfo>> = Mutex::new(None);
+
+// 폰이 파일을 업로드할 수 있도록 로컬 HTTP 서버 시작.
+// 반환값으로 {port, local_ip, save_dir} 받아 user_devices 테이블에 upsert.
+#[tauri::command]
+async fn start_sync_server() -> Result<SyncServerInfo, String> {
+    {
+        let lock = SYNC_SERVER.lock().map_err(|e| e.to_string())?;
+        if let Some(info) = &*lock {
+            return Ok(info.clone());
+        }
+    }
+
+    let save_dir = dirs::home_dir()
+        .ok_or_else(|| "home directory not found".to_string())?
+        .join("Downloads")
+        .join("Velo-Sync");
+
+    let port = sync_server::start(save_dir.clone()).await?;
+    let local_ip = local_ip_address::local_ip()
+        .map(|ip| ip.to_string())
+        .unwrap_or_else(|_| "127.0.0.1".to_string());
+
+    let info = SyncServerInfo {
+        port,
+        local_ip,
+        save_dir: save_dir.to_string_lossy().to_string(),
+    };
+
+    *SYNC_SERVER.lock().map_err(|e| e.to_string())? = Some(info.clone());
+    Ok(info)
 }
 
 // 기기 플랫폼과 사용자 표시용 이름을 반환. Supabase user_devices.device_name 용도.
@@ -112,6 +156,7 @@ pub fn run() {
             move_to_trash,
             get_machine_id,
             get_device_info,
+            start_sync_server,
             show_in_folder,
             write_binary_file
         ])
