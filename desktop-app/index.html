@@ -6,6 +6,8 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Velo</title>
+    <!-- Pretendard — iOS/Android와 동일한 한/영 하이브리드 폰트. variable font weight 100~900 지원. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -31,7 +33,8 @@
                         }
                     },
                     fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        // Pretendard Variable 우선 — 3플랫폼 동일 폰트 체계.
+                        sans: ['Pretendard Variable', 'Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Roboto', 'sans-serif'],
                     }
                 }
             }
@@ -39,7 +42,7 @@
     </script>
     <style>
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
         }
 
         /* Custom Scrollbar for Webkit */
