@@ -40,6 +40,9 @@ const App: React.FC = () => {
     const isImagePath = (path: string) => IMAGE_EXTENSIONS.has(getPathExtension(path));
 
     const [processingMode, setProcessingMode] = useState<'video' | 'image'>('video');
+    // 입력 방식 — 개별 파일 단위 (기존) vs 폴더 단위 (신규 P3+).
+    // processingMode(video/image)와 직교하는 별개 축.
+    const [inputMode, setInputMode] = useState<'file' | 'folder'>('file');
 
     const isAcceptedPath = (path: string) => {
         return processingMode === 'video' ? isVideoPath(path) : isImagePath(path);
@@ -756,8 +759,6 @@ const App: React.FC = () => {
                 setTheme={setTheme}
                 language={language}
                 setLanguage={setLanguage}
-                onLicenseButtonClick={handleLicenseButtonClick}
-                isActivated={isActivated}
                 session={session}
                 onLoginClick={() => setShowLogin(true)}
                 onLogoutClick={async () => { await supabase.auth.signOut(); }}
@@ -792,20 +793,62 @@ const App: React.FC = () => {
                     </div>
                 </div>
             )}
+            {/* 입력 방식 탭 — 개별(파일/드래그) ↔ 폴더(폴더 단위 일괄). 압축 중엔 전환 잠금. */}
+            <div className="flex items-center gap-2 px-4 pt-3 pb-2 bg-gray-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-800">
+                <button
+                    onClick={() => { if (!isProcessing) setInputMode('file'); }}
+                    disabled={isProcessing}
+                    className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${inputMode === 'file'
+                            ? 'bg-primary-500 text-white shadow-sm'
+                            : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50'
+                        }`}
+                >
+                    <span>📄</span>
+                    {language === 'ko' ? '개별 압축' : 'Individual'}
+                </button>
+                <button
+                    onClick={() => { if (!isProcessing) setInputMode('folder'); }}
+                    disabled={isProcessing}
+                    className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${inputMode === 'folder'
+                            ? 'bg-primary-500 text-white shadow-sm'
+                            : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50'
+                        }`}
+                >
+                    <span>📁</span>
+                    {language === 'ko' ? '폴더 압축' : 'Folder'}
+                </button>
+            </div>
+
             <main className="flex-1 flex overflow-hidden">
                 <div className="w-full lg:w-3/5 border-r border-gray-200 dark:border-slate-800 h-full flex flex-col">
-                    <Sidebar
-                        files={files}
-                        onDrop={handleDrop}
-                        onBrowse={handleBrowse}
-                        onRemove={handleRemove}
-                        onClearAll={handleClearAll}
-                        onOpenFolder={handleOpenFolder}
-                        t={TRANSLATIONS[language]}
-                        language={language}
-                        processingMode={processingMode}
-                        freePlanMessage={freeStatusMessage}
-                    />
+                    {inputMode === 'file' ? (
+                        <Sidebar
+                            files={files}
+                            onDrop={handleDrop}
+                            onBrowse={handleBrowse}
+                            onRemove={handleRemove}
+                            onClearAll={handleClearAll}
+                            onOpenFolder={handleOpenFolder}
+                            t={TRANSLATIONS[language]}
+                            language={language}
+                            processingMode={processingMode}
+                            freePlanMessage={freeStatusMessage}
+                        />
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-gray-50 dark:bg-slate-900/50">
+                            <div className="w-16 h-16 mb-4 rounded-full bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 flex items-center justify-center text-3xl">
+                                📁
+                            </div>
+                            <p className="text-sm font-medium text-gray-600 dark:text-slate-300">
+                                {language === 'ko' ? '폴더 압축 모드 (구현 중)' : 'Folder mode (coming soon)'}
+                            </p>
+                            <p className="mt-2 text-xs text-gray-400 dark:text-slate-500">
+                                {language === 'ko'
+                                    ? '폴더를 드래그하거나 선택하여 안의 모든 사진/영상을 한 번에 압축합니다.'
+                                    : 'Drag or pick a folder to batch-compress all media inside.'}
+                            </p>
+                        </div>
+                    )}
                 </div>
                 <div className="hidden lg:flex lg:w-2/5 h-full flex-col">
                     <SettingsPanel
