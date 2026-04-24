@@ -15,6 +15,7 @@ import { LicenseStatusModal } from './components/LicenseStatusModal';
 import { LoginModal } from './components/LoginModal';
 import { DeviceManagerModal } from './components/DeviceManagerModal';
 import { ReceivedFilesModal, type ReceivedFile } from './components/ReceivedFilesModal';
+import { ToastStack, type ToastItem } from './components/Toast';
 import { supabase } from './supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerDesktopDevice, startHeartbeat, touchDeviceHeartbeat } from './deviceRegistration';
@@ -66,6 +67,18 @@ const App: React.FC = () => {
     const [receivedFiles, setReceivedFiles] = useState<ReceivedFile[]>([]);
     const [saveDir, setSaveDir] = useState<string | null>(null);
     const [showReceived, setShowReceived] = useState<boolean>(false);
+
+    // 수신 알림 toast. file-received 이벤트마다 우상단에 3.5초 표시.
+    const [toasts, setToasts] = useState<ToastItem[]>([]);
+    const pushToast = useCallback((t: Omit<ToastItem, 'id'>) => {
+        setToasts((prev) => [...prev, { ...t, id: crypto.randomUUID() }]);
+    }, []);
+    const dismissToast = useCallback((id: string) => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, []);
+    // 이벤트 listener는 마운트 시 한 번만 등록 — language를 ref로 추적해 최신 값 참조.
+    const languageRef = useRef(language);
+    useEffect(() => { languageRef.current = language; }, [language]);
 
     useEffect(() => {
         void invoke<string>('get_machine_id')
@@ -186,10 +199,18 @@ const App: React.FC = () => {
             try {
                 const { listen } = await import('@tauri-apps/api/event');
                 unlisten = await listen<ReceivedFile>('velo://file-received', (e) => {
+                    const payload = e.payload;
                     setReceivedFiles((prev) => {
                         // 같은 hash 중복 제거 후 최신을 맨 앞에
-                        const filtered = prev.filter((f) => f.contentHash !== e.payload.contentHash);
-                        return [e.payload, ...filtered].slice(0, 200);
+                        const filtered = prev.filter((f) => f.contentHash !== payload.contentHash);
+                        return [payload, ...filtered].slice(0, 200);
+                    });
+                    pushToast({
+                        title: payload.fileName,
+                        subtitle:
+                            (languageRef.current === 'ko' ? '수신 완료' : 'Received') +
+                            (payload.fromMdnsName ? ` · ${payload.fromMdnsName}` : ''),
+                        onClick: () => setShowReceived(true),
                     });
                 });
             } catch {
@@ -849,7 +870,20 @@ const App: React.FC = () => {
                 onFileDeleted={(hash) =>
                     setReceivedFiles((prev) => prev.filter((f) => f.contentHash !== hash))
                 }
+                onSaveDirChangeQueued={(newPath) => {
+                    pushToast({
+                        title:
+                            languageRef.current === 'ko'
+                                ? '저장 폴더 변경 예약됨'
+                                : 'Save folder change queued',
+                        subtitle:
+                            languageRef.current === 'ko'
+                                ? `다음 실행부터 적용됩니다\n${newPath}`
+                                : `Applies from next launch\n${newPath}`,
+                    });
+                }}
             />
+            <ToastStack toasts={toasts} onDismiss={dismissToast} />
         </div>
     );
 };

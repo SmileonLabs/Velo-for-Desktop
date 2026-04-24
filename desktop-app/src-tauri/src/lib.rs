@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 mod sync_server;
@@ -7,6 +7,38 @@ mod sync_store;
 
 use sync_store::SyncStore;
 use std::sync::Arc;
+
+// 앱 설정 — 저장 폴더 등 유저 커스터마이즈 값. <app_data>/com.smileon.velo/settings.json
+#[derive(serde::Serialize, serde::Deserialize, Default)]
+struct AppSettings {
+    #[serde(default)]
+    save_dir: Option<String>,
+}
+
+fn settings_path() -> Result<PathBuf, String> {
+    dirs::data_dir()
+        .map(|p| p.join("com.smileon.velo").join("settings.json"))
+        .ok_or_else(|| "data dir not found".to_string())
+}
+
+fn load_settings() -> AppSettings {
+    // 실패 케이스(파일 없음/파싱 오류)는 기본값. 설정 손상돼도 앱은 떠야 함.
+    settings_path()
+        .ok()
+        .and_then(|p| std::fs::read_to_string(&p).ok())
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .unwrap_or_default()
+}
+
+fn save_settings(s: &AppSettings) -> Result<(), String> {
+    let path = settings_path()?;
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("settings dir: {}", e))?;
+    }
+    let json = serde_json::to_string_pretty(s).map_err(|e| e.to_string())?;
+    std::fs::write(&path, json).map_err(|e| format!("settings write: {}", e))?;
+    Ok(())
+}
 
 #[tauri::command]
 fn move_to_trash(path: String) -> Result<(), String> {
@@ -95,6 +127,13 @@ fn has_received_file(content_hash: String) -> Result<bool, String> {
     store.exists(&content_hash)
 }
 
+// 기기별 수신 통계 — ReceivedFilesModal 상단 통계 스트립에 표시.
+#[tauri::command]
+fn device_stats() -> Result<Vec<sync_store::DeviceStat>, String> {
+    let store = ensure_store()?;
+    store.device_stats()
+}
+
 // "정리" 플로우 — 데스크탑에서 받은 파일 삭제 (원본 + DB row)
 #[tauri::command]
 fn delete_received_file(content_hash: String) -> Result<(), String> {
@@ -116,10 +155,15 @@ async fn start_sync_server(app: tauri::AppHandle) -> Result<SyncServerInfo, Stri
         }
     }
 
-    let save_dir = dirs::home_dir()
+    // 저장 경로: 유저가 설정한 경로 우선 > 기본(~/Downloads/Velo-Sync).
+    let default_dir = dirs::home_dir()
         .ok_or_else(|| "home directory not found".to_string())?
         .join("Downloads")
         .join("Velo-Sync");
+    let save_dir = match load_settings().save_dir {
+        Some(p) if !p.is_empty() => PathBuf::from(p),
+        _ => default_dir,
+    };
 
     let store = ensure_store()?;
     let port = sync_server::start(save_dir.clone(), app.clone(), store).await?;
@@ -151,6 +195,33 @@ async fn start_sync_server(app: tauri::AppHandle) -> Result<SyncServerInfo, Stri
 
     *SYNC_SERVER.lock().map_err(|e| e.to_string())? = Some(info.clone());
     Ok(info)
+}
+
+// 저장 폴더 변경 — settings.json에 영속화. 현재 세션의 서버는 기존 경로 유지,
+// 다음 앱 실행부터 새 경로 적용. 서버 hot-restart는 포트 변동 이슈가 있어 v2로 미룸.
+#[tauri::command]
+fn set_save_dir(path: String) -> Result<(), String> {
+    let p = PathBuf::from(&path);
+    std::fs::create_dir_all(&p).map_err(|e| format!("create dir: {}", e))?;
+    let mut s = load_settings();
+    s.save_dir = Some(path);
+    save_settings(&s)
+}
+
+// 현재 설정된 save_dir 조회 — 서버 재시작 전/후 경로 비교용.
+// effective: 현재 서버가 쓰는 경로 / configured: settings.json에 저장된 경로.
+#[tauri::command]
+fn get_save_dir_info() -> Result<serde_json::Value, String> {
+    let configured = load_settings().save_dir;
+    let effective = SYNC_SERVER
+        .lock()
+        .map_err(|e| e.to_string())?
+        .as_ref()
+        .map(|info| info.save_dir.clone());
+    Ok(serde_json::json!({
+        "configured": configured,
+        "effective": effective,
+    }))
 }
 
 // 기기 플랫폼과 사용자 표시용 이름을 반환. Supabase user_devices.device_name 용도.
@@ -225,6 +296,9 @@ pub fn run() {
             list_received_files,
             has_received_file,
             delete_received_file,
+            device_stats,
+            set_save_dir,
+            get_save_dir_info,
             show_in_folder,
             write_binary_file
         ])

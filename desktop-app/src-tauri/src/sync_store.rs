@@ -21,6 +21,18 @@ pub struct InventoryEntry {
     pub received_at_ms: i64,
 }
 
+// 기기별 수신 통계 — 대시보드 표시용.
+// from_device_id가 NULL인 레코드는 하나의 "알 수 없는 기기" 그룹으로 집계.
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceStat {
+    pub device_id: Option<String>,
+    pub mdns_name: Option<String>,
+    pub file_count: i64,
+    pub total_bytes: i64,
+    pub last_received_at_ms: i64,
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ReceivedRecord {
@@ -153,6 +165,34 @@ impl SyncStore {
                 file_name: row.get(2)?,
                 file_size: row.get(3)?,
                 received_at_ms: row.get(4)?,
+            })
+        }).map_err(|e| e.to_string())?;
+        let mut out = Vec::new();
+        for r in rows { out.push(r.map_err(|e| e.to_string())?); }
+        Ok(out)
+    }
+
+    /// 기기별 수신 통계 집계 — 파일 수, 총 용량, 마지막 수신 시각.
+    /// from_mdns_name은 같은 device_id라도 기기 이름이 바뀌었을 수 있으니 MAX로 최근 값 사용.
+    pub fn device_stats(&self) -> Result<Vec<DeviceStat>, String> {
+        let c = self.conn.lock().map_err(|e| e.to_string())?;
+        let mut stmt = c.prepare(
+            r#"select from_device_id,
+                      max(from_mdns_name),
+                      count(*),
+                      coalesce(sum(file_size), 0),
+                      max(received_at_ms)
+               from received_files
+               group by from_device_id
+               order by max(received_at_ms) desc"#
+        ).map_err(|e| e.to_string())?;
+        let rows = stmt.query_map([], |row| {
+            Ok(DeviceStat {
+                device_id: row.get(0)?,
+                mdns_name: row.get(1)?,
+                file_count: row.get(2)?,
+                total_bytes: row.get(3)?,
+                last_received_at_ms: row.get(4)?,
             })
         }).map_err(|e| e.to_string())?;
         let mut out = Vec::new();
