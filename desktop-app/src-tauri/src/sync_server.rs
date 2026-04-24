@@ -1,10 +1,15 @@
 // 폰 → 데스크탑 파일 수신 HTTP 서버.
 //
 // 엔드포인트:
-//   GET  /ping   - 서비스 식별용. 폰이 데스크탑 발견 후 "이게 Velo 맞나" 확인.
-//   POST /upload - 바이너리 업로드. 헤더 X-Velo-Filename / X-Velo-Content-Hash 요구.
+//   GET  /ping            - 서비스 식별용. 폰이 데스크탑 발견 후 "이게 Velo 맞나" 확인.
+//   POST /upload          - 바이너리 업로드. 헤더 X-Velo-Filename / X-Velo-Content-Hash 요구.
+//                           Content-Range 헤더 있으면 재개 업로드 청크로 처리.
+//   GET  /upload/status   - 재개 업로드용: 서버가 현재 받은 바이트 수 조회.
+//   GET  /exists          - 폰이 원본 삭제 직전 데스크탑에 파일 있는지 확인.
+//   GET  /inventory       - 폰 델타 계산용: 특정 기기에서 이미 받은 파일 목록.
 //
 // 저장 위치: ~/Downloads/Velo-Sync/<sanitized_filename>
+// 재개 업로드 임시: ~/Downloads/Velo-Sync/.velo-tmp/<hash>.part
 // TODO: 인증 토큰 (phone ↔ desktop 간 공유된 session-scoped secret) 검증 추가
 //       현재는 LAN 내부라 가정. 공용 Wi-Fi 방어는 v2.
 
@@ -17,8 +22,9 @@ use axum::{
     Router,
 };
 use sha2::{Digest, Sha256};
-use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, net::SocketAddr, path::{Path, PathBuf}, sync::Arc};
 use tauri::{AppHandle, Emitter};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::sync_store::{InventoryEntry, ReceivedRecord, SyncStore};
 
@@ -41,6 +47,8 @@ pub async fn start(save_dir: PathBuf, app: AppHandle, store: Arc<SyncStore>) -> 
     let app = Router::new()
         .route("/ping", get(ping_handler))
         .route("/upload", post(upload_handler))
+        // 재개 업로드: 폰이 "어디까지 받았어?" 조회 → 끊긴 지점부터 이어 전송.
+        .route("/upload/status", get(upload_status_handler))
         // 폰이 "이 파일 데스크탑에 있니?" 확인 — 폰 원본 삭제 전 안전장치.
         .route("/exists", get(exists_handler))
         // 폰이 델타 계산 — "이 기기(device_id)가 보낸 것 중 내가 이미 받은 것" 목록.
@@ -79,6 +87,22 @@ async fn upload_handler(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    // Content-Range 헤더 있으면 재개 업로드 경로 — 대용량 영상이 중간에 끊겨도 이어서 받을 수 있음.
+    if let Some(range_str) = headers.get("content-range").and_then(|v| v.to_str().ok()) {
+        let range = parse_content_range(range_str)
+            .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+        return upload_chunk(state, headers, body, range).await;
+    }
+
+    // Content-Range 없으면 기존 단일 요청 업로드 — 작은 사진/영상용.
+    upload_full(state, headers, body).await
+}
+
+async fn upload_full(
+    state: AppState,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
     let filename = headers
         .get("x-velo-filename")
         .and_then(|v| v.to_str().ok())
@@ -109,7 +133,6 @@ async fn upload_handler(
         }
     }
 
-    // 경로 traversal 방어 — "/" "\" "\0" 제거
     let safe_name = sanitize_filename(filename);
     if safe_name.is_empty() {
         return Err((StatusCode::BAD_REQUEST, "invalid filename".to_string()));
@@ -120,15 +143,183 @@ async fn upload_handler(
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("write failed: {}", e)))?;
 
-    // 폰이 보낸 메타데이터 헤더 (옵션) — 없으면 null로 기록.
-    let from_device_id = headers.get("x-velo-device-id")
-        .and_then(|v| v.to_str().ok()).map(String::from);
-    let from_mdns_name = headers.get("x-velo-mdns-name")
-        .and_then(|v| v.to_str().ok()).map(String::from);
-    let phone_asset_id = headers.get("x-velo-asset-id")
-        .and_then(|v| v.to_str().ok()).map(String::from);
-    let media_type = headers.get("x-velo-media-type")
-        .and_then(|v| v.to_str().ok()).map(String::from);
+    let size = body.len() as i64;
+    finalize_received(&state, &headers, &computed_hash, &safe_name, &path, size).await;
+
+    Ok(Json(serde_json::json!({
+        "ok": true,
+        "complete": true,
+        "path": path.to_string_lossy(),
+        "hash": computed_hash,
+        "size": size,
+    })))
+}
+
+// 재개 업로드 청크 처리. 폰이 Content-Range: bytes start-end/total 로 보낸 부분을
+// <save_dir>/.velo-tmp/<hash>.part 파일에 append. 마지막 청크에서 full-file hash 검증 후
+// 최종 경로로 atomic rename → store.upsert → 이벤트 발행.
+async fn upload_chunk(
+    state: AppState,
+    headers: HeaderMap,
+    body: Bytes,
+    range: ContentRange,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let expected_hash = headers
+        .get("x-velo-content-hash")
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_lowercase())
+        .ok_or((
+            StatusCode::BAD_REQUEST,
+            "X-Velo-Content-Hash required for resumable upload".to_string(),
+        ))?;
+
+    // tmp 디렉토리는 save_dir 하위에 둬서 rename이 같은 파일시스템 내 atomic 작업이 되게 함.
+    let tmp_dir = state.save_dir.join(".velo-tmp");
+    tokio::fs::create_dir_all(&tmp_dir)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("tmp dir: {}", e)))?;
+    let tmp_path = tmp_dir.join(format!("{}.part", expected_hash));
+
+    let current_size = match tokio::fs::metadata(&tmp_path).await {
+        Ok(m) => m.len(),
+        Err(_) => 0,
+    };
+
+    // 폰이 보낸 start 오프셋이 서버 실제 상태와 어긋나면 거부 — 폰이 /upload/status로 재동기화 후 재시도해야 함.
+    if range.start != current_size {
+        return Err((
+            StatusCode::CONFLICT,
+            format!(
+                "range mismatch: server has {} bytes, phone sent start={}",
+                current_size, range.start
+            ),
+        ));
+    }
+
+    // append 모드 — seek 불필요. OS의 O_APPEND가 동시성 안전 write 보장.
+    let mut file = tokio::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&tmp_path)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("tmp open: {}", e)))?;
+    file.write_all(&body)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("tmp write: {}", e)))?;
+    // fsync 안 함 — 청크마다 fsync하면 느려짐. 크래시 시 부분 파일은 /upload/status 조회 후 재개 가능.
+
+    let new_size = current_size + body.len() as u64;
+
+    // 아직 완료 안 됨 — 다음 청크 대기.
+    if new_size < range.total {
+        return Ok(Json(serde_json::json!({
+            "ok": true,
+            "complete": false,
+            "receivedBytes": new_size,
+            "totalBytes": range.total,
+        })));
+    }
+
+    // 마지막 청크 도착 — full-file SHA-256 검증.
+    let computed = hash_file_streaming(&tmp_path)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("hash verify: {}", e)))?;
+    if computed != expected_hash {
+        // 해시 불일치 → 파일 오염. tmp 정리하고 폰이 처음부터 다시 보내게 유도.
+        let _ = tokio::fs::remove_file(&tmp_path).await;
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!("full-file hash mismatch: expected={} got={}", expected_hash, computed),
+        ));
+    }
+
+    let filename = headers
+        .get("x-velo-filename")
+        .and_then(|v| v.to_str().ok())
+        .ok_or((
+            StatusCode::BAD_REQUEST,
+            "missing X-Velo-Filename header".to_string(),
+        ))?;
+    let safe_name = sanitize_filename(filename);
+    if safe_name.is_empty() {
+        return Err((StatusCode::BAD_REQUEST, "invalid filename".to_string()));
+    }
+    let final_path = state.save_dir.join(&safe_name);
+
+    tokio::fs::rename(&tmp_path, &final_path)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("rename: {}", e)))?;
+
+    finalize_received(&state, &headers, &computed, &safe_name, &final_path, new_size as i64).await;
+
+    Ok(Json(serde_json::json!({
+        "ok": true,
+        "complete": true,
+        "path": final_path.to_string_lossy(),
+        "hash": computed,
+        "size": new_size,
+    })))
+}
+
+// 폰이 재연결 후 "내가 어디까지 보냈지?" 조회. 이미 DB에 있으면 complete=true.
+// tmp 파일 있으면 현재 누적 바이트 수 반환, 없으면 0.
+async fn upload_status_handler(
+    State(state): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let hash = params
+        .get("hash")
+        .ok_or((StatusCode::BAD_REQUEST, "missing hash".to_string()))?
+        .to_lowercase();
+
+    // 이미 최종 저장됐으면 폰은 업로드 건너뛰어도 됨.
+    if state.store.exists(&hash).unwrap_or(false) {
+        return Ok(Json(serde_json::json!({
+            "hash": hash,
+            "complete": true,
+            "receivedBytes": 0,
+        })));
+    }
+
+    let tmp_path = state.save_dir.join(".velo-tmp").join(format!("{}.part", hash));
+    let received = match tokio::fs::metadata(&tmp_path).await {
+        Ok(m) => m.len(),
+        Err(_) => 0,
+    };
+
+    Ok(Json(serde_json::json!({
+        "hash": hash,
+        "complete": false,
+        "receivedBytes": received,
+    })))
+}
+
+// 업로드 완료 공통 후처리 — DB upsert + 프론트 이벤트 발행.
+// full/chunk 양쪽에서 호출.
+async fn finalize_received(
+    state: &AppState,
+    headers: &HeaderMap,
+    content_hash: &str,
+    safe_name: &str,
+    path: &Path,
+    size: i64,
+) {
+    let from_device_id = headers
+        .get("x-velo-device-id")
+        .and_then(|v| v.to_str().ok())
+        .map(String::from);
+    let from_mdns_name = headers
+        .get("x-velo-mdns-name")
+        .and_then(|v| v.to_str().ok())
+        .map(String::from);
+    let phone_asset_id = headers
+        .get("x-velo-asset-id")
+        .and_then(|v| v.to_str().ok())
+        .map(String::from);
+    let media_type = headers
+        .get("x-velo-media-type")
+        .and_then(|v| v.to_str().ok())
+        .map(String::from);
 
     let received_at_ms = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -136,9 +327,9 @@ async fn upload_handler(
         .unwrap_or(0);
 
     let record = ReceivedRecord {
-        content_hash: computed_hash.clone(),
-        file_name: safe_name.clone(),
-        file_size: body.len() as i64,
+        content_hash: content_hash.to_string(),
+        file_name: safe_name.to_string(),
+        file_size: size,
         media_type,
         from_device_id,
         from_mdns_name,
@@ -151,16 +342,54 @@ async fn upload_handler(
         // DB 기록 실패해도 파일은 디스크에 있으니 업로드 자체는 성공 처리.
     }
 
-    // 프론트에 실시간 이벤트 — ReceivedRecord 전체를 그대로 전달.
-    // DB 조회 결과와 동일 스키마라 프론트가 한 타입으로 처리 가능.
     let _ = state.app.emit("velo://file-received", &record);
+}
 
-    Ok(Json(serde_json::json!({
-        "ok": true,
-        "path": path.to_string_lossy(),
-        "hash": computed_hash,
-        "size": body.len(),
-    })))
+struct ContentRange {
+    start: u64,
+    #[allow(dead_code)] // 프로토콜 필드 — parse 단계 검증에서만 사용.
+    end: u64,
+    total: u64,
+}
+
+// "bytes 0-1048575/5242880" 형식 파싱. end는 inclusive.
+fn parse_content_range(s: &str) -> Result<ContentRange, String> {
+    let s = s.trim();
+    let body = s
+        .strip_prefix("bytes ")
+        .ok_or_else(|| format!("invalid Content-Range: {}", s))?;
+    let (range_part, total_part) = body
+        .split_once('/')
+        .ok_or_else(|| format!("invalid Content-Range: {}", s))?;
+    let (start_str, end_str) = range_part
+        .split_once('-')
+        .ok_or_else(|| format!("invalid Content-Range: {}", s))?;
+    let start: u64 = start_str.parse().map_err(|_| format!("bad start in {}", s))?;
+    let end: u64 = end_str.parse().map_err(|_| format!("bad end in {}", s))?;
+    let total: u64 = total_part.parse().map_err(|_| format!("bad total in {}", s))?;
+
+    if end < start || end >= total {
+        return Err(format!("invalid range: start={} end={} total={}", start, end, total));
+    }
+    Ok(ContentRange { start, end, total })
+}
+
+// 대용량 파일의 SHA-256을 스트리밍으로 계산 — 메모리에 전부 올리지 않음.
+async fn hash_file_streaming(path: &Path) -> Result<String, String> {
+    let mut file = tokio::fs::File::open(path)
+        .await
+        .map_err(|e| format!("open {}: {}", path.display(), e))?;
+    let mut hasher = Sha256::new();
+    // 64KB 청크 — 메모리 부담 없고 디스크 I/O도 효율적.
+    let mut buf = vec![0u8; 64 * 1024];
+    loop {
+        let n = file.read(&mut buf).await.map_err(|e| format!("read: {}", e))?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buf[..n]);
+    }
+    Ok(hex::encode(hasher.finalize()))
 }
 
 
