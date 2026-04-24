@@ -9,6 +9,8 @@ export interface VideoFile {
     progress: number;
     // 폴더 모드에서 video/image 혼재 처리용 — 없으면 App의 processingMode 전역값 사용.
     mediaType?: 'video' | 'image';
+    // 재실행 skip 룰 — 이미 출력 파일이 존재해 압축 건너뛴 경우 true. status는 'completed'로 둠.
+    skipped?: boolean;
 }
 
 export type OutputFormat = 'MP4' | 'MOV' | 'GIF';

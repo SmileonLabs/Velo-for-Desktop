@@ -17,9 +17,19 @@ import { DeviceManagerModal } from './components/DeviceManagerModal';
 import { ReceivedFilesModal, type ReceivedFile } from './components/ReceivedFilesModal';
 import { ToastStack, type ToastItem } from './components/Toast';
 import { FolderSidebar, type FolderScanSummary } from './components/FolderSidebar';
+import { FileText, Folder as FolderIcon } from 'lucide-react';
 import { supabase } from './supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerDesktopDevice, startHeartbeat, touchDeviceHeartbeat } from './deviceRegistration';
+
+// 완료 Toast subtitle용 간단 포매터. 크기 단위 자동 선택.
+function formatBytesShort(bytes: number): string {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.min(sizes.length - 1, Math.floor(Math.log(bytes) / Math.log(k)));
+    return `${(bytes / Math.pow(k, i)).toFixed(i === 0 ? 0 : 1)} ${sizes[i]}`;
+}
 
 const App: React.FC = () => {
     const PAID_OFFLINE_GRACE_HOURS = 72;
@@ -583,6 +593,42 @@ const App: React.FC = () => {
                 try { await invoke('ensure_dir', { path: outParent }); } catch (e) { console.warn('[ensure_dir]', e); }
             }
 
+            // 재실행 skip 룰 — 출력 파일 이미 존재하면 압축 건너뛰고 완료 처리.
+            // 특히 폴더 모드에서 같은 폴더를 다시 드롭했을 때 이중 처리 방지.
+            const alreadyExists = await invoke<boolean>('file_exists', { path: outputPath }).catch(() => false);
+            if (alreadyExists) {
+                const existingInfo = await getFileInfo(outputPath).catch(() => ({ size: 0 }));
+                setFiles(prev => prev.map(f => f.id === file.id ? {
+                    ...f,
+                    status: 'completed',
+                    progress: 100,
+                    outputPath,
+                    compressedSize: existingInfo.size,
+                    skipped: true,
+                } : f));
+                const sid = currentSessionIdRef.current;
+                if (sid) {
+                    invoke('compress_record_insert', {
+                        record: {
+                            id: file.id,
+                            sessionId: sid,
+                            fileName: file.name,
+                            inputPath: file.path,
+                            outputPath,
+                            mediaType: fileMediaType,
+                            format: ext,
+                            originalSize: file.originalSize,
+                            compressedSize: existingInfo.size,
+                            skipped: true,
+                            skipReason: 'already_compressed',
+                            errorMessage: null,
+                            completedAtMs: Date.now(),
+                        },
+                    }).catch(e => console.warn('[compress_record_insert/skip]', e));
+                }
+                return; // compressVideo/Image 호출 없이 종료 — finally block은 정상 실행.
+            }
+
             const task = fileMediaType === 'video'
                 ? compressVideo(
                     file.path,
@@ -694,13 +740,14 @@ const App: React.FC = () => {
         }
     };
 
-    // 세션 종료 감지 — isProcessing true→false 전환 시 DB에 집계 기록.
-    // files 리스트에서 성공/실패/skip 카운트 + 총 용량 요약.
+    // 세션 종료 감지 — isProcessing true→false 전환 시 DB에 집계 기록 + 완료 Toast.
     useEffect(() => {
         if (wasProcessingRef.current && !isProcessing) {
             const sid = currentSessionIdRef.current;
             if (sid) {
-                const done = files.filter(f => f.status === 'completed').length;
+                // done = 실제 압축 성공 (skipped 제외), skipped = 이미 출력 있어서 건너뜀.
+                const skipped = files.filter(f => f.skipped === true).length;
+                const done = files.filter(f => f.status === 'completed' && !f.skipped).length;
                 const failed = files.filter(f => f.status === 'error').length;
                 const sumOriginal = files.reduce((a, f) => a + (f.originalSize ?? 0), 0);
                 const sumCompressed = files.reduce((a, f) => a + (f.compressedSize ?? 0), 0);
@@ -708,15 +755,34 @@ const App: React.FC = () => {
                     sessionId: sid,
                     doneCount: done,
                     failedCount: failed,
-                    skippedCount: 0, // P5 skip 룰 반영 예정
+                    skippedCount: skipped,
                     totalOriginal: sumOriginal,
                     totalCompressed: sumCompressed,
                 }).catch(e => console.warn('[compress_session_end]', e));
                 currentSessionIdRef.current = null;
+
+                // 완료 Toast — 0건이면 생략 (취소 상태).
+                if (done + skipped + failed > 0) {
+                    const savedBytes = Math.max(0, sumOriginal - sumCompressed);
+                    const savedPercent = sumOriginal > 0
+                        ? Math.round((savedBytes / sumOriginal) * 100)
+                        : 0;
+                    const parts: string[] = [];
+                    if (done > 0) parts.push(languageRef.current === 'ko' ? `${done}개 완료` : `${done} done`);
+                    if (skipped > 0) parts.push(languageRef.current === 'ko' ? `${skipped}개 건너뜀` : `${skipped} skipped`);
+                    if (failed > 0) parts.push(languageRef.current === 'ko' ? `${failed}개 실패` : `${failed} failed`);
+                    const subtitle = savedBytes > 0
+                        ? `${parts.join(' · ')} · ${formatBytesShort(savedBytes)} ${languageRef.current === 'ko' ? '절감' : 'saved'} (${savedPercent}%)`
+                        : parts.join(' · ');
+                    pushToast({
+                        title: languageRef.current === 'ko' ? '압축 완료' : 'Compression done',
+                        subtitle,
+                    });
+                }
             }
         }
         wasProcessingRef.current = isProcessing;
-    }, [isProcessing, files]);
+    }, [isProcessing, files, pushToast]);
 
     // Auto-spawn tasks
     useEffect(() => {
@@ -984,7 +1050,7 @@ const App: React.FC = () => {
                             : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50'
                         }`}
                 >
-                    <span>📄</span>
+                    <FileText size={14} />
                     {language === 'ko' ? '개별 압축' : 'Individual'}
                 </button>
                 <button
@@ -995,7 +1061,7 @@ const App: React.FC = () => {
                             : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50'
                         }`}
                 >
-                    <span>📁</span>
+                    <FolderIcon size={14} />
                     {language === 'ko' ? '폴더 압축' : 'Folder'}
                 </button>
             </div>

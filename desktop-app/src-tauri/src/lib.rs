@@ -86,6 +86,12 @@ fn ensure_dir(path: String) -> Result<(), String> {
     std::fs::create_dir_all(&path).map_err(|e| format!("create dir: {}", e))
 }
 
+// 재실행 skip 룰 — 같은 입력을 또 압축하지 않도록 출력 경로 유무 체크.
+#[tauri::command]
+fn file_exists(path: String) -> bool {
+    std::path::Path::new(&path).exists()
+}
+
 #[derive(serde::Serialize)]
 struct DeviceInfo {
     platform: String,
@@ -382,6 +388,7 @@ pub fn run() {
             write_binary_file,
             scan_folder_media,
             ensure_dir,
+            file_exists,
             compress_session_start,
             compress_record_insert,
             compress_session_end,
