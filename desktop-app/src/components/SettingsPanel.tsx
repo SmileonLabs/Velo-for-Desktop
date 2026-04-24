@@ -2,7 +2,8 @@ import React from 'react';
 import {
     Settings2, Trash2, Sliders, Info,
     Wind, ShieldCheck, Sparkles, Wand2, Monitor, FolderOpen, Zap,
-    Gem, Scale, Image as ImageIcon
+    Gem, Scale, Image as ImageIcon,
+    SlidersHorizontal, Layers
 } from 'lucide-react';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { CompressionSettings, ResolutionPreset, Translation, Language } from '../types';
@@ -73,7 +74,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
             <div className="space-y-6">
                 <div className="p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 space-y-3">
-                    <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                    <label className="block text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                         {language === 'ko' ? '작업 타입' : 'Task Type'}
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -105,7 +106,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <div className="p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <section>
-                            <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">{t.format}</label>
+                            <label className="block text-sm font-semibold text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">{t.format}</label>
                             <select
                                 value={settings.format}
                                 onChange={(e) => updateSettings({ format: e.target.value as any })}
@@ -116,7 +117,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                             </select>
                         </section>
                         <section>
-                            <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">{t.resolution}</label>
+                            <label className="block text-sm font-semibold text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">{t.resolution}</label>
                             <select
                                 value={settings.resolution}
                                 onChange={(e) => updateSettings({ resolution: e.target.value as ResolutionPreset })}
@@ -208,13 +209,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     <div className="p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 space-y-4">
                         <div className="flex items-center gap-2">
                             <ImageIcon size={14} className="text-primary-500" />
-                            <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                            <label className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                                 {language === 'ko' ? '이미지 압축 설정' : 'Image Compression Settings'}
                             </label>
                         </div>
 
                         <section>
-                            <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
+                            <label className="block text-sm font-semibold text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
                                 {language === 'ko' ? '결과 포맷' : 'Output Format'}
                             </label>
                             <select
@@ -230,7 +231,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
                         <section>
                             <div className="flex justify-between items-center mb-2">
-                                <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                                <label className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                                     {language === 'ko' ? '품질' : 'Quality'}
                                 </label>
                                 <span className="text-xs font-bold px-2 py-0.5 bg-primary-500 text-white rounded-full">{settings.imageQuality}</span>
@@ -254,7 +255,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
                 {/* 2. Output Destination Section */}
                 <div className="p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800">
-                    <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
+                    <label className="block text-sm font-semibold text-gray-500 dark:text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
                         <FolderOpen size={14} /> {t.outputDest}
                     </label>
                     <div className="space-y-3">
@@ -333,7 +334,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 {/* 3. Compression Quality & Presets */}
                 <section className="p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800">
                     <div className="flex justify-between items-center mb-4">
-                        <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <label className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
                             <Sliders size={14} /> {t.quality}
                         </label>
                         <span className="text-xs font-bold px-2 py-0.5 bg-primary-500 text-white rounded-full">Level {settings.compressionLevel}</span>
@@ -444,7 +445,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
                 {/* 4. Advanced Toggle Section */}
                 <div className="flex items-center gap-2 mt-4 mb-2">
-                    <Sparkles className="text-amber-500" size={16} />
+                    <SlidersHorizontal className="text-amber-500" size={16} />
                     <h3 className="text-sm font-bold text-gray-700 dark:text-slate-300">{t.advanced}</h3>
                 </div>
 
@@ -503,7 +504,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     <div className="group flex flex-col p-3 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl transition-all">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-3">
-                                <Sparkles size={16} className="text-gray-400 group-hover:text-primary-500" />
+                                <Layers size={16} className="text-gray-400 group-hover:text-primary-500" />
                                 <div>
                                     <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t.parallel}</span>
                                     <Tooltip text={t.parallelTip} />
