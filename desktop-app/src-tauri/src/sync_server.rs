@@ -20,7 +20,7 @@ use sha2::{Digest, Sha256};
 use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc};
 use tauri::{AppHandle, Emitter};
 
-use crate::sync_store::{ReceivedRecord, SyncStore};
+use crate::sync_store::{InventoryEntry, ReceivedRecord, SyncStore};
 
 #[derive(Clone)]
 struct AppState {
@@ -43,6 +43,8 @@ pub async fn start(save_dir: PathBuf, app: AppHandle, store: Arc<SyncStore>) -> 
         .route("/upload", post(upload_handler))
         // 폰이 "이 파일 데스크탑에 있니?" 확인 — 폰 원본 삭제 전 안전장치.
         .route("/exists", get(exists_handler))
+        // 폰이 델타 계산 — "이 기기(device_id)가 보낸 것 중 내가 이미 받은 것" 목록.
+        .route("/inventory", get(inventory_handler))
         // 10 GB 상한 — 4K ProRes 장시간 영상도 수용. 실질 상한은 디스크 공간.
         .layer(DefaultBodyLimit::max(10 * 1024 * 1024 * 1024))
         .with_state(state);
@@ -174,6 +176,23 @@ async fn exists_handler(
     let exists = state.store.exists(&hash)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
     Ok(Json(serde_json::json!({ "exists": exists, "hash": hash })))
+}
+
+// 폰이 델타 계산 시 호출 — 특정 device_id에서 이미 받은 파일의 핵심 식별자만 반환.
+// 폰은 로컬 PHAsset 목록과 비교해 "아직 안 보낸 것"만 업로드.
+async fn inventory_handler(
+    State(state): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let device_id = params.get("device_id")
+        .ok_or((StatusCode::BAD_REQUEST, "missing device_id".to_string()))?;
+    let entries: Vec<InventoryEntry> = state.store.inventory_for_device(device_id)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(Json(serde_json::json!({
+        "deviceId": device_id,
+        "count": entries.len(),
+        "entries": entries,
+    })))
 }
 
 fn sanitize_filename(name: &str) -> String {

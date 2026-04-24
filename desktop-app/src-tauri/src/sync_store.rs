@@ -10,6 +10,17 @@ use rusqlite::{Connection, OptionalExtension, params};
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+// 델타 계산용 경량 엔트리 — full record 없이 식별자만.
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct InventoryEntry {
+    pub content_hash: String,
+    pub phone_asset_id: Option<String>,
+    pub file_name: String,
+    pub file_size: i64,
+    pub received_at_ms: i64,
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ReceivedRecord {
@@ -122,6 +133,30 @@ impl SyncStore {
         for r in rows {
             out.push(r.map_err(|e| e.to_string())?);
         }
+        Ok(out)
+    }
+
+    /// 특정 폰(device_id)에서 받은 모든 레코드의 핵심 식별자만 반환.
+    /// 폰이 델타 계산에 사용 — "이미 보낸 asset은 skip"
+    pub fn inventory_for_device(&self, device_id: &str) -> Result<Vec<InventoryEntry>, String> {
+        let c = self.conn.lock().map_err(|e| e.to_string())?;
+        let mut stmt = c.prepare(
+            r#"select content_hash, phone_asset_id, file_name, file_size, received_at_ms
+               from received_files
+               where from_device_id = ?1
+               order by received_at_ms desc"#
+        ).map_err(|e| e.to_string())?;
+        let rows = stmt.query_map(params![device_id], |row| {
+            Ok(InventoryEntry {
+                content_hash: row.get(0)?,
+                phone_asset_id: row.get(1)?,
+                file_name: row.get(2)?,
+                file_size: row.get(3)?,
+                received_at_ms: row.get(4)?,
+            })
+        }).map_err(|e| e.to_string())?;
+        let mut out = Vec::new();
+        for r in rows { out.push(r.map_err(|e| e.to_string())?); }
         Ok(out)
     }
 
