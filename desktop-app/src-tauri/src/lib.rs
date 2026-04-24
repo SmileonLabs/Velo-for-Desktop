@@ -4,6 +4,7 @@ use std::sync::Mutex;
 mod sync_server;
 mod mdns_advertiser;
 mod sync_store;
+mod folder_scanner;
 
 use sync_store::SyncStore;
 use std::sync::Arc;
@@ -125,6 +126,13 @@ fn list_received_files(limit: Option<i64>) -> Result<Vec<sync_store::ReceivedRec
 fn has_received_file(content_hash: String) -> Result<bool, String> {
     let store = ensure_store()?;
     store.exists(&content_hash)
+}
+
+// 폴더 압축 모드 진입 시 호출 — 선택한 폴더를 재귀 스캔해 안의 비디오/이미지 전부 나열.
+// 출력 폴더(_velo_compressed)는 자동 제외 → 재처리 무한 루프 방지.
+#[tauri::command]
+fn scan_folder_media(root_path: String) -> Result<folder_scanner::ScanResult, String> {
+    folder_scanner::scan(Path::new(&root_path))
 }
 
 // 기기별 수신 통계 — ReceivedFilesModal 상단 통계 스트립에 표시.
@@ -300,7 +308,8 @@ pub fn run() {
             set_save_dir,
             get_save_dir_info,
             show_in_folder,
-            write_binary_file
+            write_binary_file,
+            scan_folder_media
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
