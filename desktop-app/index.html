@@ -15,17 +15,26 @@
             theme: {
                 extend: {
                     colors: {
+                        // iOS/Android VeloColors.VeloCyan (#00E5FF) 기반 팔레트 — 3플랫폼 색 일관성.
                         primary: {
-                            50: '#f5f3ff',
-                            100: '#ede9fe',
-                            200: '#ddd6fe',
-                            300: '#c4b5fd',
-                            400: '#a78bfa',
-                            500: '#8b5cf6',
-                            600: '#7c3aed',
-                            700: '#6d28d9',
-                            800: '#5b21b6',
-                            900: '#4c1d95',
+                            50: '#ecfeff',
+                            100: '#cffafe',
+                            200: '#a5f3fc',
+                            300: '#67e8f9',
+                            400: '#22d3ee',
+                            500: '#00E5FF',
+                            600: '#00b8cc',
+                            700: '#008fa3',
+                            800: '#006b7a',
+                            900: '#004852',
+                        },
+                        // iOS VeloColors 나머지 브랜드 색 — 필요한 곳에서 직접 사용.
+                        velo: {
+                            cyan: '#00E5FF',
+                            mint: '#22D4A8',
+                            blue: '#3B82F6',
+                            purple: '#7B5EA7',
+                            danger: '#EF4444',
                         },
                         // For compatibility with previous names if any
                         background: {
