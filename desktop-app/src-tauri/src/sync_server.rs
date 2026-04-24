@@ -304,22 +304,24 @@ async fn finalize_received(
     path: &Path,
     size: i64,
 ) {
+    // HTTP 헤더는 ASCII만 안전 — 폰(iOS)은 한글 기기명/asset-id 등을 percent-encoding해 보냄.
+    // DB·UI에서 원본 그대로 보이도록 여기서 decode.
     let from_device_id = headers
         .get("x-velo-device-id")
         .and_then(|v| v.to_str().ok())
-        .map(String::from);
+        .map(percent_decode);
     let from_mdns_name = headers
         .get("x-velo-mdns-name")
         .and_then(|v| v.to_str().ok())
-        .map(String::from);
+        .map(percent_decode);
     let phone_asset_id = headers
         .get("x-velo-asset-id")
         .and_then(|v| v.to_str().ok())
-        .map(String::from);
+        .map(percent_decode);
     let media_type = headers
         .get("x-velo-media-type")
         .and_then(|v| v.to_str().ok())
-        .map(String::from);
+        .map(percent_decode);
 
     let received_at_ms = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -422,6 +424,37 @@ async fn inventory_handler(
         "count": entries.len(),
         "entries": entries,
     })))
+}
+
+// HTTP 헤더에 담긴 percent-encoded UTF-8을 원본 문자열로 복원.
+// 폰이 보낸 "도도의 iPhone" → "%EB%8F%84%EB%8F%84%EC%9D%98 iPhone" → 다시 "도도의 iPhone".
+// 크레이트 의존 없이 처리 — 용도가 이 파일 내부로 한정돼 있어 20줄이 간결.
+fn percent_decode(s: &str) -> String {
+    let bytes = s.as_bytes();
+    let mut out: Vec<u8> = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            if let (Some(hi), Some(lo)) = (hex_nibble(bytes[i + 1]), hex_nibble(bytes[i + 2])) {
+                out.push((hi << 4) | lo);
+                i += 3;
+                continue;
+            }
+        }
+        // '+'는 form 인코딩 전용이라 여기선 변환하지 않음 — RFC 3986 percent-encoding만 지원.
+        out.push(bytes[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+fn hex_nibble(b: u8) -> Option<u8> {
+    match b {
+        b'0'..=b'9' => Some(b - b'0'),
+        b'a'..=b'f' => Some(b - b'a' + 10),
+        b'A'..=b'F' => Some(b - b'A' + 10),
+        _ => None,
+    }
 }
 
 fn sanitize_filename(name: &str) -> String {
