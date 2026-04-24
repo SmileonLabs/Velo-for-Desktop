@@ -35,7 +35,8 @@ export interface CompressionSettings {
     outputMode: 'Same' | 'Custom';
     customOutputPath?: string;
     useHighEfficiencyCodec: boolean; // true = AV1 (High Tech), false = VP9 (Safe)
-    imageFormat: 'JPG' | 'PNG' | 'WEBP';
+    // PNG는 무손실 방식이라 압축 효과가 미미 → 출력 옵션에서 제외.
+    imageFormat: 'JPG' | 'WEBP';
     imageQuality: number; // 1-100
 }
 

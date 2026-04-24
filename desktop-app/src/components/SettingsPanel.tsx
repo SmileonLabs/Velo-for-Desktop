@@ -219,12 +219,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                             </label>
                             <select
                                 value={settings.imageFormat}
-                                onChange={(e) => updateSettings({ imageFormat: e.target.value as 'JPG' | 'PNG' | 'WEBP' })}
+                                onChange={(e) => updateSettings({ imageFormat: e.target.value as 'JPG' | 'WEBP' })}
                                 disabled={isProcessing}
                                 className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                             >
                                 <option value="JPG">JPG</option>
-                                <option value="PNG">PNG</option>
                                 <option value="WEBP">WEBP</option>
                             </select>
                         </section>
