@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    Moon, Sun, KeyRound, ExternalLink, LogIn, LogOut, User, Laptop, Inbox
+    Moon, Sun, ExternalLink, LogIn, LogOut, User, Laptop, Inbox
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { Language } from '../types';
@@ -10,8 +10,6 @@ interface HeaderProps {
     setTheme: (t: 'light' | 'dark') => void;
     language: Language;
     setLanguage: (l: Language) => void;
-    onLicenseButtonClick: () => void;
-    isActivated: boolean;
     session: Session | null;
     onLoginClick: () => void;
     onLogoutClick: () => void;
@@ -21,7 +19,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-    theme, setTheme, language, setLanguage, onLicenseButtonClick, isActivated,
+    theme, setTheme, language, setLanguage,
     session, onLoginClick, onLogoutClick, onDevicesClick,
     onReceivedClick, receivedCount,
 }) => {
@@ -62,24 +60,6 @@ export const Header: React.FC<HeaderProps> = ({
                     )}
                 </button>
 
-                {!isActivated ? (
-                    <button
-                        onClick={onLicenseButtonClick}
-                        className="inline-flex items-center gap-2 rounded-lg border border-primary-200/80 bg-primary-50 px-3 py-2 text-xs font-semibold text-primary-700 shadow-sm transition-colors hover:bg-primary-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-primary-700/60 dark:hover:bg-slate-800 dark:hover:text-primary-300"
-                    >
-                        <KeyRound size={14} />
-                        {language === 'ko' ? '라이선스 키 등록하기' : 'Register License Key'}
-                    </button>
-                ) : (
-                    <button
-                        onClick={onLicenseButtonClick}
-                        className="inline-flex items-center gap-2 rounded-lg border border-primary-200/80 bg-primary-50 px-3 py-2 text-xs font-semibold text-primary-700 shadow-sm transition-colors hover:bg-primary-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-primary-700/60 dark:hover:bg-slate-800 dark:hover:text-primary-300"
-                    >
-                        <KeyRound size={14} />
-                        {language === 'ko' ? '라이센스 관리' : 'License Management'}
-                    </button>
-                )}
-
                 {/* Velo 계정 로그인 / 프로필 — 모바일에서 가입한 계정으로 로그인 */}
                 {userEmail ? (
                     <div className="flex items-center gap-2">
@@ -108,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({
                         className="inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
                     >
                         <LogIn size={14} />
-                        {language === 'ko' ? 'Velo 로그인' : 'Sign in'}
+                        {language === 'ko' ? '로그인' : 'Sign in'}
                     </button>
                 )}
 
