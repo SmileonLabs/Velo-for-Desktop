@@ -5,6 +5,7 @@ mod sync_server;
 mod mdns_advertiser;
 mod sync_store;
 mod folder_scanner;
+mod compression_store;
 
 use sync_store::SyncStore;
 use std::sync::Arc;
@@ -105,6 +106,8 @@ static SYNC_SERVER: Mutex<Option<SyncServerInfo>> = Mutex::new(None);
 static MDNS_HANDLE: Mutex<Option<mdns_advertiser::MdnsHandle>> = Mutex::new(None);
 // SQLite store — 수신 파일 메타데이터 DB. Arc로 sync_server와 공유.
 static SYNC_STORE: Mutex<Option<Arc<SyncStore>>> = Mutex::new(None);
+// 압축 세션 기록용 별도 store. 같은 DB 파일 공유, 다른 테이블.
+static COMPRESSION_STORE: Mutex<Option<Arc<compression_store::CompressionStore>>> = Mutex::new(None);
 
 fn ensure_store() -> Result<Arc<SyncStore>, String> {
     let mut lock = SYNC_STORE.lock().map_err(|e| e.to_string())?;
@@ -116,6 +119,20 @@ fn ensure_store() -> Result<Arc<SyncStore>, String> {
         .join("com.smileon.velo")
         .join("velo-sync.db");
     let store = Arc::new(SyncStore::open(db_path)?);
+    *lock = Some(store.clone());
+    Ok(store)
+}
+
+fn ensure_compression_store() -> Result<Arc<compression_store::CompressionStore>, String> {
+    let mut lock = COMPRESSION_STORE.lock().map_err(|e| e.to_string())?;
+    if let Some(store) = &*lock {
+        return Ok(store.clone());
+    }
+    let db_path = dirs::data_dir()
+        .ok_or_else(|| "data dir not found".to_string())?
+        .join("com.smileon.velo")
+        .join("velo-compression.db");
+    let store = Arc::new(compression_store::CompressionStore::open(db_path)?);
     *lock = Some(store.clone());
     Ok(store)
 }
@@ -132,6 +149,54 @@ fn list_received_files(limit: Option<i64>) -> Result<Vec<sync_store::ReceivedRec
 fn has_received_file(content_hash: String) -> Result<bool, String> {
     let store = ensure_store()?;
     store.exists(&content_hash)
+}
+
+// 압축 세션 시작 — "압축 시작" 버튼 눌렸을 때. session_id는 프론트에서 UUID 생성해 전달.
+#[tauri::command]
+fn compress_session_start(
+    session_id: String,
+    session_type: String,
+    root_path: Option<String>,
+    total_count: i64,
+) -> Result<(), String> {
+    let store = ensure_compression_store()?;
+    store.start_session(&session_id, &session_type, root_path.as_deref(), total_count)
+}
+
+// 파일 하나 처리 완료 시 호출 — 성공/실패/skip 모두 같은 API로.
+#[tauri::command]
+fn compress_record_insert(record: compression_store::CompressionRecord) -> Result<(), String> {
+    let store = ensure_compression_store()?;
+    store.insert_record(&record)
+}
+
+// 세션 종료 — 집계 값 일괄 업데이트 + ended_at_ms 기록.
+#[tauri::command]
+fn compress_session_end(
+    session_id: String,
+    done_count: i64,
+    failed_count: i64,
+    skipped_count: i64,
+    total_original: i64,
+    total_compressed: i64,
+) -> Result<(), String> {
+    let store = ensure_compression_store()?;
+    store.end_session(&session_id, done_count, failed_count, skipped_count, total_original, total_compressed)
+}
+
+// 재실행 skip 룰용 — 특정 input_path가 이미 성공적으로 압축된 적 있는지.
+// 있으면 해당 record 반환 (output_path 등 포함). P5에서 사용.
+#[tauri::command]
+fn compress_find_previous(input_path: String) -> Result<Option<compression_store::CompressionRecord>, String> {
+    let store = ensure_compression_store()?;
+    store.find_successful_record(&input_path)
+}
+
+// 압축 세션 기록 조회 — 최근 N개.
+#[tauri::command]
+fn compress_recent_sessions(limit: Option<i64>) -> Result<Vec<compression_store::CompressionSession>, String> {
+    let store = ensure_compression_store()?;
+    store.recent_sessions(limit.unwrap_or(50))
 }
 
 // 폴더 압축 모드 진입 시 호출 — 선택한 폴더를 재귀 스캔해 안의 비디오/이미지 전부 나열.
@@ -316,7 +381,12 @@ pub fn run() {
             show_in_folder,
             write_binary_file,
             scan_folder_media,
-            ensure_dir
+            ensure_dir,
+            compress_session_start,
+            compress_record_insert,
+            compress_session_end,
+            compress_find_previous,
+            compress_recent_sessions
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

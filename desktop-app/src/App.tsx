@@ -348,6 +348,10 @@ const App: React.FC = () => {
     const activeIdsRef = useRef<Set<string>>(new Set());
     const storedLicenseKey = localStorage.getItem('VL_LICENSE_KEY');
 
+    // 압축 세션 — "압축 시작" 눌렸을 때 생성, 전부 끝나면 종료. DB에 집계 기록.
+    const currentSessionIdRef = useRef<string | null>(null);
+    const wasProcessingRef = useRef<boolean>(false);
+
     // --- Theme Effect ---
     useEffect(() => {
         if (theme === 'dark') {
@@ -547,6 +551,12 @@ const App: React.FC = () => {
 
         setFiles(prev => prev.map(f => f.id === file.id ? { ...f, status: 'processing', progress: 0 } : f));
 
+        // catch block에서도 참조할 수 있도록 try 밖에서 계산.
+        const fileMediaType: 'video' | 'image' = file.mediaType ?? processingMode;
+        const videoFormat = settings.format;
+        const imageFormat = settings.imageFormat;
+        const ext = (fileMediaType === 'image' ? imageFormat : videoFormat).toLowerCase();
+
         try {
             const path = file.path;
             const lastSlash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
@@ -555,11 +565,6 @@ const App: React.FC = () => {
             const lastDot = filenameWithExt.lastIndexOf('.');
             const filename = lastDot !== -1 ? filenameWithExt.substring(0, lastDot) : filenameWithExt;
 
-            const videoFormat = settings.format;
-            const imageFormat = settings.imageFormat;
-            // 폴더 모드: 파일별 mediaType 존중 (혼재 폴더 대응). 개별 모드: 전역 processingMode 사용.
-            const fileMediaType: 'video' | 'image' = file.mediaType ?? processingMode;
-            const ext = (fileMediaType === 'image' ? imageFormat : videoFormat).toLowerCase();
             const resolutionSuffix = fileMediaType === 'image'
                 ? ''
                 : (settings.resolution === 'Original' ? '' : `_${settings.resolution}`);
@@ -619,12 +624,55 @@ const App: React.FC = () => {
                 compressedSize: outputInfo.size,
                 outputPath: outputPath
             } : f));
+
+            // 세션 DB에 성공 record 기록. 실패해도 압축 자체는 성공이라 로그만.
+            const sid = currentSessionIdRef.current;
+            if (sid) {
+                invoke('compress_record_insert', {
+                    record: {
+                        id: file.id,
+                        sessionId: sid,
+                        fileName: file.name,
+                        inputPath: file.path,
+                        outputPath,
+                        mediaType: fileMediaType,
+                        format: ext,
+                        originalSize: file.originalSize,
+                        compressedSize: outputInfo.size,
+                        skipped: false,
+                        skipReason: null,
+                        errorMessage: null,
+                        completedAtMs: Date.now(),
+                    },
+                }).catch(e => console.warn('[compress_record_insert]', e));
+            }
         } catch (error: any) {
             if (error.message === 'STOPPED') {
                 setFiles(prev => prev.map(f => f.id === file.id ? { ...f, status: 'queued', progress: 0 } : f));
             } else {
                 console.error(`Error processing file ${file.name}: `, error);
                 setFiles(prev => prev.map(f => f.id === file.id ? { ...f, status: 'error', progress: 0 } : f));
+                // 실패 기록 — error_message 포함.
+                const sid = currentSessionIdRef.current;
+                if (sid) {
+                    invoke('compress_record_insert', {
+                        record: {
+                            id: file.id,
+                            sessionId: sid,
+                            fileName: file.name,
+                            inputPath: file.path,
+                            outputPath: null,
+                            mediaType: fileMediaType,
+                            format: ext,
+                            originalSize: file.originalSize,
+                            compressedSize: 0,
+                            skipped: false,
+                            skipReason: null,
+                            errorMessage: String(error?.message ?? error),
+                            completedAtMs: Date.now(),
+                        },
+                    }).catch(e => console.warn('[compress_record_insert/error]', e));
+                }
             }
         } finally {
             activeIdsRef.current.delete(file.id);
@@ -645,6 +693,30 @@ const App: React.FC = () => {
             });
         }
     };
+
+    // 세션 종료 감지 — isProcessing true→false 전환 시 DB에 집계 기록.
+    // files 리스트에서 성공/실패/skip 카운트 + 총 용량 요약.
+    useEffect(() => {
+        if (wasProcessingRef.current && !isProcessing) {
+            const sid = currentSessionIdRef.current;
+            if (sid) {
+                const done = files.filter(f => f.status === 'completed').length;
+                const failed = files.filter(f => f.status === 'error').length;
+                const sumOriginal = files.reduce((a, f) => a + (f.originalSize ?? 0), 0);
+                const sumCompressed = files.reduce((a, f) => a + (f.compressedSize ?? 0), 0);
+                invoke('compress_session_end', {
+                    sessionId: sid,
+                    doneCount: done,
+                    failedCount: failed,
+                    skippedCount: 0, // P5 skip 룰 반영 예정
+                    totalOriginal: sumOriginal,
+                    totalCompressed: sumCompressed,
+                }).catch(e => console.warn('[compress_session_end]', e));
+                currentSessionIdRef.current = null;
+            }
+        }
+        wasProcessingRef.current = isProcessing;
+    }, [isProcessing, files]);
 
     // Auto-spawn tasks
     useEffect(() => {
@@ -810,9 +882,20 @@ const App: React.FC = () => {
             setFiles(prev => prev.map(f => ({ ...f, status: 'queued', progress: 0 })));
         }
 
+        // 세션 시작 — 이번 batch의 unique id + 타입·루트 폴더 기록.
+        const sessionId = crypto.randomUUID();
+        currentSessionIdRef.current = sessionId;
+        const queuedCount = files.filter(f => f.status === 'queued' || f.status === 'completed').length;
+        invoke('compress_session_start', {
+            sessionId,
+            sessionType: inputMode,
+            rootPath: inputMode === 'folder' ? (folderScan?.rootPath ?? null) : null,
+            totalCount: queuedCount,
+        }).catch(e => console.warn('[compress_session_start]', e));
+
         setIsProcessing(true);
         setTotalProgress(0);
-    }, [files, isProcessing, isActivated, getRequestedFiles, freeQuotaState.checking, processingMode, settings]);
+    }, [files, isProcessing, isActivated, getRequestedFiles, freeQuotaState.checking, processingMode, settings, inputMode, folderScan]);
 
     const startDisabled = isProcessing
         ? false
