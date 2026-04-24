@@ -29,15 +29,8 @@ struct AppState {
     store: Arc<SyncStore>,
 }
 
-// 프론트로 전달할 수신 이벤트 payload.
-#[derive(serde::Serialize, Clone)]
-struct FileReceivedEvent {
-    filename: String,
-    size: u64,
-    hash: String,
-    path: String,
-    received_at: String, // ISO-8601
-}
+// 프론트로 전달할 수신 이벤트 — ReceivedRecord와 동일 스키마로 통일.
+// 프론트는 DB 조회 결과와 이벤트 페이로드를 같은 타입으로 처리 가능.
 
 pub async fn start(save_dir: PathBuf, app: AppHandle, store: Arc<SyncStore>) -> Result<u16, String> {
     tokio::fs::create_dir_all(&save_dir)
@@ -156,15 +149,9 @@ async fn upload_handler(
         // DB 기록 실패해도 파일은 디스크에 있으니 업로드 자체는 성공 처리.
     }
 
-    // 프론트에 실시간 이벤트 — 토스트 / 수신 리스트 갱신에 사용.
-    let event = FileReceivedEvent {
-        filename: safe_name.clone(),
-        size: body.len() as u64,
-        hash: computed_hash.clone(),
-        path: path.to_string_lossy().to_string(),
-        received_at: chrono_now_iso(),
-    };
-    let _ = state.app.emit("velo://file-received", event);
+    // 프론트에 실시간 이벤트 — ReceivedRecord 전체를 그대로 전달.
+    // DB 조회 결과와 동일 스키마라 프론트가 한 타입으로 처리 가능.
+    let _ = state.app.emit("velo://file-received", &record);
 
     Ok(Json(serde_json::json!({
         "ok": true,
@@ -174,35 +161,6 @@ async fn upload_handler(
     })))
 }
 
-// 외부 크레이트 없이 현재 시각 ISO-8601 포맷 — serde_json 경유 System time → UTC.
-fn chrono_now_iso() -> String {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let secs = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
-    let days = secs / 86400;
-    let t = secs % 86400;
-    let (h, m, s) = (t / 3600, (t % 3600) / 60, t % 60);
-    // 1970-01-01 기준 일수 → Y/M/D 역산
-    let (y, mo, d) = days_to_ymd(days as i64);
-    format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z", y, mo, d, h, m, s)
-}
-
-fn days_to_ymd(days_since_epoch: i64) -> (i64, u32, u32) {
-    // Howard Hinnant 달력 알고리즘 (정확 + 라이브러리 의존 없음)
-    let z = days_since_epoch + 719468;
-    let era = if z >= 0 { z } else { z - 146096 } / 146097;
-    let doe = (z - era * 146097) as u64;
-    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
-    let y = yoe as i64 + era * 400;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
-    let m = (if mp < 10 { mp + 3 } else { mp - 9 }) as u32;
-    let y = if m <= 2 { y + 1 } else { y };
-    (y, m, d)
-}
 
 // 폰이 원본 삭제 직전 "이 해시가 데스크탑에 있나?" 확인.
 // 200 OK + { exists: true/false }

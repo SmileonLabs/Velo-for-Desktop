@@ -172,15 +172,25 @@ const App: React.FC = () => {
         };
     }, []);
 
-    // 데스크탑이 폰으로부터 파일을 수신할 때마다 Rust에서 emit하는 이벤트를 리스트에 누적.
-    // Header에서 배지로 표시 + ReceivedFilesModal에서 내역 확인.
+    // 앱 시작 시 SQLite DB에서 받은 파일 이력 로드 (앱 재시작해도 유지).
+    // 이후 실시간 수신 이벤트로 prepend.
     useEffect(() => {
         let unlisten: (() => void) | undefined;
         (async () => {
             try {
+                const initial = await invoke<ReceivedFile[]>('list_received_files', { limit: 200 });
+                setReceivedFiles(initial);
+            } catch (err) {
+                console.warn('[velo] list_received_files failed', err);
+            }
+            try {
                 const { listen } = await import('@tauri-apps/api/event');
                 unlisten = await listen<ReceivedFile>('velo://file-received', (e) => {
-                    setReceivedFiles((prev) => [e.payload, ...prev].slice(0, 50));
+                    setReceivedFiles((prev) => {
+                        // 같은 hash 중복 제거 후 최신을 맨 앞에
+                        const filtered = prev.filter((f) => f.contentHash !== e.payload.contentHash);
+                        return [e.payload, ...filtered].slice(0, 200);
+                    });
                 });
             } catch {
                 // Tauri event API 미로드 — dev/web 환경. 무시.
@@ -836,6 +846,9 @@ const App: React.FC = () => {
                 files={receivedFiles}
                 saveDir={saveDir}
                 language={language}
+                onFileDeleted={(hash) =>
+                    setReceivedFiles((prev) => prev.filter((f) => f.contentHash !== hash))
+                }
             />
         </div>
     );
