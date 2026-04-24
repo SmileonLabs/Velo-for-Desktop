@@ -79,6 +79,12 @@ fn write_binary_file(path: String, bytes: Vec<u8>) -> Result<(), String> {
     std::fs::write(path, bytes).map_err(|e| e.to_string())
 }
 
+// 폴더 압축 모드에서 출력 경로의 부모 디렉토리 보장 — FFmpeg는 상위 폴더 자동 생성 안 함.
+#[tauri::command]
+fn ensure_dir(path: String) -> Result<(), String> {
+    std::fs::create_dir_all(&path).map_err(|e| format!("create dir: {}", e))
+}
+
 #[derive(serde::Serialize)]
 struct DeviceInfo {
     platform: String,
@@ -309,7 +315,8 @@ pub fn run() {
             get_save_dir_info,
             show_in_folder,
             write_binary_file,
-            scan_folder_media
+            scan_folder_media,
+            ensure_dir
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -16,6 +16,7 @@ import { LoginModal } from './components/LoginModal';
 import { DeviceManagerModal } from './components/DeviceManagerModal';
 import { ReceivedFilesModal, type ReceivedFile } from './components/ReceivedFilesModal';
 import { ToastStack, type ToastItem } from './components/Toast';
+import { FolderSidebar, type FolderScanSummary } from './components/FolderSidebar';
 import { supabase } from './supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerDesktopDevice, startHeartbeat, touchDeviceHeartbeat } from './deviceRegistration';
@@ -40,9 +41,11 @@ const App: React.FC = () => {
     const isImagePath = (path: string) => IMAGE_EXTENSIONS.has(getPathExtension(path));
 
     const [processingMode, setProcessingMode] = useState<'video' | 'image'>('video');
-    // 입력 방식 — 개별 파일 단위 (기존) vs 폴더 단위 (신규 P3+).
+    // 입력 방식 — 개별 파일 단위 (기존) vs 폴더 단위.
     // processingMode(video/image)와 직교하는 별개 축.
     const [inputMode, setInputMode] = useState<'file' | 'folder'>('file');
+    // 폴더 모드 전용 — 스캔 요약. 파일 목록 자체는 기존 `files` state 재사용.
+    const [folderScan, setFolderScan] = useState<FolderScanSummary | null>(null);
 
     const isAcceptedPath = (path: string) => {
         return processingMode === 'video' ? isVideoPath(path) : isImagePath(path);
@@ -376,19 +379,7 @@ const App: React.FC = () => {
         setFiles(prev => [...prev, ...newFiles]);
     }, [isProcessing, processingMode]);
 
-    // Native Drag and Drop Listener for Tauri v2
-    useEffect(() => {
-        const unlistenPromise = getCurrentWebviewWindow().onDragDropEvent((event) => {
-            if (event.payload.type === 'drop') {
-                const paths = event.payload.paths;
-                addFiles(paths);
-            }
-        });
-
-        return () => {
-            unlistenPromise.then(unlisten => unlisten());
-        };
-    }, [addFiles]);
+    // Drag/Drop 리스너는 scanAndLoadFolder 등 폴더 핸들러 선언 후로 이동 (아래 참조).
 
     const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -450,6 +441,104 @@ const App: React.FC = () => {
         invoke('show_in_folder', { path });
     }, []);
 
+    // --- 폴더 모드 ---
+
+    // 스캔 결과를 VideoFile 리스트로 변환. 출력 경로는 루트 기준 트리 구조 유지:
+    //   {rootPath}/_velo_compressed/{상대 폴더}/{파일명}.{ext}
+    // 출력 확장자는 processingMode·settings에 따라 결정되는데, 폴더엔 video/image 혼재할 수 있어
+    // 파일별 media_type을 보고 개별 결정.
+    const folderScanToFiles = useCallback((scanData: {
+        rootPath: string;
+        files: Array<{ path: string; fileName: string; size: number; mediaType: string; relativePath: string }>;
+    }): VideoFile[] => {
+        const videoExt = settings.format.toLowerCase();
+        const imageExt = settings.imageFormat.toLowerCase();
+        const compressedRoot = `${scanData.rootPath}/_velo_compressed`;
+        return scanData.files.map((sf) => {
+            const stem = sf.fileName.includes('.')
+                ? sf.fileName.slice(0, sf.fileName.lastIndexOf('.'))
+                : sf.fileName;
+            const lastSlash = sf.relativePath.lastIndexOf('/');
+            const relDir = lastSlash < 0 ? '' : sf.relativePath.slice(0, lastSlash);
+            const outDir = relDir ? `${compressedRoot}/${relDir}` : compressedRoot;
+            const ext = sf.mediaType === 'image' ? imageExt : videoExt;
+            return {
+                id: crypto.randomUUID(),
+                path: sf.path,
+                name: sf.fileName,
+                status: 'queued',
+                originalSize: sf.size,
+                progress: 0,
+                outputPath: `${outDir}/${stem}.${ext}`,
+                mediaType: sf.mediaType === 'image' ? 'image' : 'video',
+            } as VideoFile;
+        });
+    }, [settings.format, settings.imageFormat]);
+
+    const scanAndLoadFolder = useCallback(async (rootPath: string) => {
+        if (isProcessing) return;
+        try {
+            const result = await invoke<{
+                rootPath: string;
+                totalCount: number;
+                totalBytes: number;
+                videoCount: number;
+                imageCount: number;
+                files: Array<{ path: string; fileName: string; size: number; mediaType: string; relativePath: string }>;
+            }>('scan_folder_media', { rootPath });
+            setFolderScan({
+                rootPath: result.rootPath,
+                totalCount: result.totalCount,
+                totalBytes: result.totalBytes,
+                videoCount: result.videoCount,
+                imageCount: result.imageCount,
+            });
+            setFiles(folderScanToFiles(result));
+        } catch (err) {
+            console.warn('[folder] scan failed', err);
+        }
+    }, [isProcessing, folderScanToFiles]);
+
+    const handlePickFolder = useCallback(async () => {
+        try {
+            const selected = await open({ directory: true, multiple: false });
+            if (!selected || typeof selected !== 'string') return;
+            await scanAndLoadFolder(selected);
+        } catch (err) {
+            console.warn('[folder] pick dialog failed', err);
+        }
+    }, [scanAndLoadFolder]);
+
+    const handleResetFolder = useCallback(() => {
+        if (isProcessing) return;
+        setFolderScan(null);
+        setFiles([]);
+        setTotalProgress(0);
+        setCurrentFileId(null);
+    }, [isProcessing]);
+
+    // Native Drag and Drop — 파일 모드는 addFiles, 폴더 모드는 첫 디렉토리 스캔.
+    useEffect(() => {
+        const unlistenPromise = getCurrentWebviewWindow().onDragDropEvent(async (event) => {
+            if (event.payload.type !== 'drop') return;
+            const paths = event.payload.paths;
+            if (inputMode === 'folder') {
+                for (const p of paths) {
+                    try {
+                        await scanAndLoadFolder(p);
+                        return;
+                    } catch {
+                        // 디렉토리 아니면 다음 경로 시도
+                    }
+                }
+                console.warn('[folder] dropped paths contained no valid directory');
+                return;
+            }
+            addFiles(paths);
+        });
+        return () => { unlistenPromise.then(unlisten => unlisten()); };
+    }, [addFiles, inputMode, scanAndLoadFolder]);
+
     // --- Processing Logic ---
     const processFile = async (file: VideoFile) => {
         activeIdsRef.current.add(file.id);
@@ -468,8 +557,10 @@ const App: React.FC = () => {
 
             const videoFormat = settings.format;
             const imageFormat = settings.imageFormat;
-            const ext = (processingMode === 'image' ? imageFormat : videoFormat).toLowerCase();
-            const resolutionSuffix = processingMode === 'image'
+            // 폴더 모드: 파일별 mediaType 존중 (혼재 폴더 대응). 개별 모드: 전역 processingMode 사용.
+            const fileMediaType: 'video' | 'image' = file.mediaType ?? processingMode;
+            const ext = (fileMediaType === 'image' ? imageFormat : videoFormat).toLowerCase();
+            const resolutionSuffix = fileMediaType === 'image'
                 ? ''
                 : (settings.resolution === 'Original' ? '' : `_${settings.resolution}`);
 
@@ -478,9 +569,16 @@ const App: React.FC = () => {
                 outDir = settings.customOutputPath;
             }
 
-            const outputPath = `${outDir}/${filename}_compressed${resolutionSuffix}.${ext}`;
+            // 폴더 모드는 folderScanToFiles에서 미리 계산된 outputPath를 그대로 사용.
+            // 출력 경로의 부모 디렉토리는 여기서 보장 (FFmpeg는 자동 mkdir 안 함).
+            const outputPath = file.outputPath ?? `${outDir}/${filename}_compressed${resolutionSuffix}.${ext}`;
+            const outParentSep = Math.max(outputPath.lastIndexOf('/'), outputPath.lastIndexOf('\\'));
+            if (outParentSep > 0) {
+                const outParent = outputPath.substring(0, outParentSep);
+                try { await invoke('ensure_dir', { path: outParent }); } catch (e) { console.warn('[ensure_dir]', e); }
+            }
 
-            const task = processingMode === 'video'
+            const task = fileMediaType === 'video'
                 ? compressVideo(
                     file.path,
                     outputPath,
@@ -835,19 +933,16 @@ const App: React.FC = () => {
                             freePlanMessage={freeStatusMessage}
                         />
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-gray-50 dark:bg-slate-900/50">
-                            <div className="w-16 h-16 mb-4 rounded-full bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 flex items-center justify-center text-3xl">
-                                📁
-                            </div>
-                            <p className="text-sm font-medium text-gray-600 dark:text-slate-300">
-                                {language === 'ko' ? '폴더 압축 모드 (구현 중)' : 'Folder mode (coming soon)'}
-                            </p>
-                            <p className="mt-2 text-xs text-gray-400 dark:text-slate-500">
-                                {language === 'ko'
-                                    ? '폴더를 드래그하거나 선택하여 안의 모든 사진/영상을 한 번에 압축합니다.'
-                                    : 'Drag or pick a folder to batch-compress all media inside.'}
-                            </p>
-                        </div>
+                        <FolderSidebar
+                            scan={folderScan}
+                            files={files}
+                            isProcessing={isProcessing}
+                            language={language}
+                            onPickFolder={handlePickFolder}
+                            onDropFolder={scanAndLoadFolder}
+                            onReset={handleResetFolder}
+                            onRemoveFile={handleRemove}
+                        />
                     )}
                 </div>
                 <div className="hidden lg:flex lg:w-2/5 h-full flex-col">

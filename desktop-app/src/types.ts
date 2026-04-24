@@ -7,6 +7,8 @@ export interface VideoFile {
     compressedSize?: number;
     outputPath?: string;
     progress: number;
+    // 폴더 모드에서 video/image 혼재 처리용 — 없으면 App의 processingMode 전역값 사용.
+    mediaType?: 'video' | 'image';
 }
 
 export type OutputFormat = 'MP4' | 'MOV' | 'GIF';
