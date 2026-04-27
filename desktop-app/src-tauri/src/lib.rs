@@ -8,6 +8,7 @@ mod sync_store;
 mod folder_scanner;
 mod compression_store;
 mod wifi_direct;
+mod cloudflared;
 
 use sync_store::SyncStore;
 use std::sync::Arc;
@@ -156,6 +157,9 @@ static SYNC_STORE: Mutex<Option<Arc<SyncStore>>> = Mutex::new(None);
 static COMPRESSION_STORE: Mutex<Option<Arc<compression_store::CompressionStore>>> = Mutex::new(None);
 // mDNS browser — 다른 Velo 기기 (폰·다른 데스크탑) 발견. 백그라운드 thread가 cache 갱신.
 static MDNS_BROWSER: Mutex<Option<Arc<mdns_discoverer::MdnsBrowserHandle>>> = Mutex::new(None);
+// Cloudflare Quick Tunnel — 외부 동기화용 공개 URL. 발급은 비동기(spawn 후 수 초).
+// 앱 종료(RunEvent::Exit) 시 child 프로세스 정리.
+static CLOUDFLARED: Mutex<Option<Arc<cloudflared::CloudflaredHandle>>> = Mutex::new(None);
 
 fn ensure_store() -> Result<Arc<SyncStore>, String> {
     let mut lock = SYNC_STORE.lock().map_err(|e| e.to_string())?;
@@ -313,6 +317,17 @@ async fn start_sync_server(app: tauri::AppHandle) -> Result<SyncServerInfo, Stri
         }
     };
 
+    // Cloudflare Quick Tunnel 시작 — 실패해도 LAN-only 모드로 정상 동작.
+    // URL 발급은 비동기(stderr 파싱)이므로 여기서는 spawn만 하고 즉시 반환.
+    match cloudflared::start(port) {
+        Ok(handle) => {
+            *CLOUDFLARED.lock().map_err(|e| e.to_string())? = Some(Arc::new(handle));
+        }
+        Err(e) => {
+            eprintln!("[cloudflared] disabled — {}", e);
+        }
+    }
+
     let info = SyncServerInfo {
         port,
         local_ip,
@@ -322,6 +337,17 @@ async fn start_sync_server(app: tauri::AppHandle) -> Result<SyncServerInfo, Stri
 
     *SYNC_SERVER.lock().map_err(|e| e.to_string())? = Some(info.clone());
     Ok(info)
+}
+
+// 외부 URL 조회 — cloudflared가 stderr에서 URL을 캡처하면 None → Some으로 변경됨.
+// 프론트는 sync_server 시작 후 1초 간격으로 polling, 최대 ~15초까지 기다리면 충분.
+// 시스템에 cloudflared 미설치 시 영구 None — 자연스럽게 LAN-only UX.
+#[tauri::command]
+fn get_external_url() -> Option<String> {
+    CLOUDFLARED
+        .lock()
+        .ok()
+        .and_then(|g| g.as_ref().and_then(|h| h.external_url()))
 }
 
 // 저장 폴더 변경 — settings.json에 영속화. 현재 세션의 서버는 기존 경로 유지,
@@ -434,6 +460,7 @@ pub fn run() {
             wifi_direct_supported,
             start_device_discovery,
             discover_devices,
+            get_external_url,
             file_exists,
             compress_session_start,
             compress_record_insert,
@@ -441,6 +468,14 @@ pub fn run() {
             compress_find_previous,
             compress_recent_sessions
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app_handle, event| {
+            // 앱 종료 시 cloudflared child 프로세스 정리 — 정적 변수는 자동 drop되지 않음.
+            if let tauri::RunEvent::Exit = event {
+                if let Ok(mut g) = CLOUDFLARED.lock() {
+                    *g = None;
+                }
+            }
+        });
 }
