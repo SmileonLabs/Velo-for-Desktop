@@ -145,4 +145,13 @@ export interface Translation {
     individualMode: string;
     folderMode: string;
     imageSettings: string;
+
+    // Header / 업데이트 배너
+    signIn: string;
+    signOut: string;
+    receivedFiles: string;
+    myDevices: string;
+    updateAvailable: string;
+    updateButton: string;
+    dismissButton: string;
 }

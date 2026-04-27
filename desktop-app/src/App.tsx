@@ -1045,9 +1045,7 @@ const App: React.FC = () => {
                 <div className="mx-4 mt-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
                     <div className="flex items-center justify-between gap-3">
                         <span>
-                            {language === 'ko'
-                                ? `새 버전(${updateInfo.latestVersion})이 있습니다. 업데이트를 권장합니다.`
-                                : `A new version (${updateInfo.latestVersion}) is available. Update is recommended.`}
+                            {TRANSLATIONS[language].updateAvailable} (v{updateInfo.latestVersion})
                         </span>
                         <div className="flex items-center gap-2 shrink-0">
                             <a
@@ -1056,13 +1054,13 @@ const App: React.FC = () => {
                                 rel="noopener noreferrer"
                                 className="rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-blue-700"
                             >
-                                {language === 'ko' ? '업데이트' : 'Update'}
+                                {TRANSLATIONS[language].updateButton}
                             </a>
                             <button
                                 onClick={() => setUpdateInfo(null)}
                                 className="rounded-lg border border-blue-300 px-3 py-1.5 text-[11px] font-bold hover:bg-blue-100 dark:border-blue-800 dark:hover:bg-blue-900/40"
                             >
-                                {language === 'ko' ? '닫기' : 'Dismiss'}
+                                {TRANSLATIONS[language].dismissButton}
                             </button>
                         </div>
                     </div>

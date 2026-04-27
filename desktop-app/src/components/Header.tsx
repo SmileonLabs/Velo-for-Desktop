@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { Language, LANGUAGES } from '../types';
+import { TRANSLATIONS } from '../constants';
 
 interface HeaderProps {
     theme: 'light' | 'dark';
@@ -24,6 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
     onReceivedClick, receivedCount,
 }) => {
     const userEmail = session?.user?.email ?? null;
+    const t = TRANSLATIONS[language];
     return (
         <header className="h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-950 flex items-center justify-between px-6 transition-colors duration-300">
             <div className="flex items-center gap-3">
@@ -50,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                     onClick={onReceivedClick}
                     className="relative inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-2 text-xs font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
-                    title={language === 'ko' ? '받은 파일' : 'Received files'}
+                    title={t.receivedFiles}
                 >
                     <Inbox size={14} />
                     {receivedCount > 0 && (
@@ -66,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <button
                             onClick={onDevicesClick}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-2 text-xs font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
-                            title={language === 'ko' ? '내 기기' : 'My devices'}
+                            title={t.myDevices}
                         >
                             <Laptop size={14} />
                         </button>
@@ -77,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <button
                             onClick={onLogoutClick}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-2 text-xs font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
-                            title={language === 'ko' ? '로그아웃' : 'Sign out'}
+                            title={t.signOut}
                         >
                             <LogOut size={14} />
                         </button>
@@ -88,7 +90,7 @@ export const Header: React.FC<HeaderProps> = ({
                         className="inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
                     >
                         <LogIn size={14} />
-                        {language === 'ko' ? '로그인' : 'Sign in'}
+                        {t.signIn}
                     </button>
                 )}
 
