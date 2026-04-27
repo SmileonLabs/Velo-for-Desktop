@@ -6,6 +6,7 @@ mod mdns_advertiser;
 mod sync_store;
 mod folder_scanner;
 mod compression_store;
+mod wifi_direct;
 
 use sync_store::SyncStore;
 use std::sync::Arc;
@@ -84,6 +85,22 @@ fn write_binary_file(path: String, bytes: Vec<u8>) -> Result<(), String> {
 #[tauri::command]
 fn ensure_dir(path: String) -> Result<(), String> {
     std::fs::create_dir_all(&path).map_err(|e| format!("create dir: {}", e))
+}
+
+// Wi-Fi Direct 자동 페어링 — 안드 P2P SSID에 Windows가 자동 접속.
+// macOS·Linux는 stub이 미지원 응답 반환 (UI에서 비활성화).
+#[tauri::command]
+async fn wifi_direct_pair(
+    ssid: String,
+    passphrase: String,
+) -> Result<wifi_direct::WifiDirectPairResult, String> {
+    wifi_direct::pair(ssid, passphrase).await
+}
+
+// UI 토글 표시 결정용 — Windows true / 그 외 false.
+#[tauri::command]
+fn wifi_direct_supported() -> bool {
+    wifi_direct::is_supported()
 }
 
 // 재실행 skip 룰 — 같은 입력을 또 압축하지 않도록 출력 경로 유무 체크.
@@ -388,6 +405,8 @@ pub fn run() {
             write_binary_file,
             scan_folder_media,
             ensure_dir,
+            wifi_direct_pair,
+            wifi_direct_supported,
             file_exists,
             compress_session_start,
             compress_record_insert,
