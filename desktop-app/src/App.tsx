@@ -1079,7 +1079,7 @@ const App: React.FC = () => {
                         }`}
                 >
                     <FileText size={14} />
-                    {language === 'ko' ? '개별 압축' : 'Individual'}
+                    {TRANSLATIONS[language].individualMode}
                 </button>
                 <button
                     onClick={() => { if (!isProcessing) setInputMode('folder'); }}
@@ -1090,7 +1090,7 @@ const App: React.FC = () => {
                         }`}
                 >
                     <FolderIcon size={14} />
-                    {language === 'ko' ? '폴더 압축' : 'Folder'}
+                    {TRANSLATIONS[language].folderMode}
                 </button>
             </div>
 

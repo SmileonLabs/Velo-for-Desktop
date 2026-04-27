@@ -75,7 +75,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <div className="space-y-6">
                 <div className="p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 space-y-3">
                     <label className="block text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                        {language === 'ko' ? '작업 타입' : 'Task Type'}
+                        {t.taskType}
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                         <button
@@ -86,7 +86,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                                 ? 'bg-white dark:bg-slate-800 border-primary-500 text-primary-600 dark:text-primary-300'
                                 : 'bg-transparent border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300'} ${isProcessing ? 'opacity-60 cursor-not-allowed' : ''}`}
                         >
-                            {language === 'ko' ? '동영상 압축' : 'Video Compression'}
+                            {t.videoMode}
                         </button>
                         <button
                             type="button"
@@ -96,7 +96,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                                 ? 'bg-white dark:bg-slate-800 border-primary-500 text-primary-600 dark:text-primary-300'
                                 : 'bg-transparent border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300'} ${isProcessing ? 'opacity-60 cursor-not-allowed' : ''}`}
                         >
-                            {language === 'ko' ? '이미지 압축' : 'Image Compression'}
+                            {t.imageMode}
                         </button>
                     </div>
                 </div>
@@ -210,7 +210,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                         <div className="flex items-center gap-2">
                             <ImageIcon size={14} className="text-primary-500" />
                             <label className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                                {language === 'ko' ? '이미지 압축 설정' : 'Image Compression Settings'}
+                                {t.imageSettings}
                             </label>
                         </div>
 

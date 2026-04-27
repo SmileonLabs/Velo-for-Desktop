@@ -137,4 +137,12 @@ export interface Translation {
     highEfficiency: string;
     highEfficiencyTip: string;
     downloadCodec: string;
+
+    // Task type + input mode (개별/폴더, 영상/이미지)
+    taskType: string;
+    videoMode: string;
+    imageMode: string;
+    individualMode: string;
+    folderMode: string;
+    imageSettings: string;
 }
