@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    Moon, Sun, ExternalLink, LogIn, LogOut, User, Laptop, Inbox, Globe, ChevronDown
+    Moon, Sun, ExternalLink, LogIn, LogOut, User, Laptop, Inbox, Globe, ChevronDown, Check
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { Language, LANGUAGES } from '../types';
@@ -26,6 +26,23 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
     const userEmail = session?.user?.email ?? null;
     const t = TRANSLATIONS[language];
+
+    // 커스텀 언어 드롭다운 — 네이티브 <select>는 OS가 마지막 항목 선택 시 위로 띄움.
+    // 항상 버튼 아래로 열리도록 수동 popover 구현.
+    const [langOpen, setLangOpen] = useState(false);
+    const langRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!langOpen) return;
+        const onClickOutside = (e: MouseEvent) => {
+            if (langRef.current && !langRef.current.contains(e.target as Node)) {
+                setLangOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', onClickOutside);
+        return () => document.removeEventListener('mousedown', onClickOutside);
+    }, [langOpen]);
+    const currentLang = LANGUAGES.find((l) => l.code === language) ?? LANGUAGES[0];
+
     return (
         <header className="h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-950 flex items-center justify-between px-6 transition-colors duration-300">
             <div className="flex items-center gap-3">
@@ -94,20 +111,42 @@ export const Header: React.FC<HeaderProps> = ({
                     </button>
                 )}
 
-                {/* Language Selector — 10개 언어 (모바일과 동일 셋트) */}
-                <div className="relative">
-                    <select
-                        value={language}
-                        onChange={(e) => setLanguage(e.target.value as Language)}
-                        className="appearance-none cursor-pointer bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-full pl-7 pr-8 py-1.5 text-xs font-medium text-gray-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                {/* Language Selector — 10개 언어. 커스텀 popover로 항상 아래로 열림. */}
+                <div ref={langRef} className="relative">
+                    <button
+                        type="button"
+                        onClick={() => setLangOpen((v) => !v)}
                         aria-label="Language"
+                        aria-expanded={langOpen}
+                        className="inline-flex items-center gap-1.5 cursor-pointer bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-full pl-2.5 pr-2 py-1.5 text-xs font-medium text-gray-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-all"
                     >
-                        {LANGUAGES.map((l) => (
-                            <option key={l.code} value={l.code}>{l.native}</option>
-                        ))}
-                    </select>
-                    <Globe size={12} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400" />
-                    <ChevronDown size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400" />
+                        <Globe size={12} className="text-gray-500 dark:text-slate-400" />
+                        <span>{currentLang.native}</span>
+                        <ChevronDown size={12} className={`text-gray-500 dark:text-slate-400 transition-transform ${langOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {langOpen && (
+                        <ul className="absolute right-0 top-full mt-1 z-50 min-w-[150px] py-1 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg max-h-[400px] overflow-y-auto">
+                            {LANGUAGES.map((l) => {
+                                const active = l.code === language;
+                                return (
+                                    <li key={l.code}>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setLanguage(l.code); setLangOpen(false); }}
+                                            className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 text-xs font-medium transition-colors text-left ${
+                                                active
+                                                    ? 'text-primary-600 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/20'
+                                                    : 'text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800'
+                                            }`}
+                                        >
+                                            <span>{l.native}</span>
+                                            {active && <Check size={12} className="text-primary-600 dark:text-primary-300" />}
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
                 </div>
 
                 {/* Theme Toggle */}
