@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Moon, Sun, ExternalLink, LogIn, LogOut, User, Laptop, RefreshCw, Globe, ChevronDown, Check, Link2
+    Moon, Sun, ExternalLink, LogIn, LogOut, User, Laptop, RefreshCw, Globe, ChevronDown, Check
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { Language, LANGUAGES } from '../types';
@@ -17,15 +17,12 @@ interface HeaderProps {
     onDevicesClick: () => void;
     onReceivedClick: () => void;
     receivedCount: number;
-    // 디바이스 연결 모달 진입점 — mDNS 발견 메인 + WiFi Direct 보조.
-    onConnectClick?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
     theme, setTheme, language, setLanguage,
     session, onLoginClick, onLogoutClick, onDevicesClick,
     onReceivedClick, receivedCount,
-    onConnectClick,
 }) => {
     const userEmail = session?.user?.email ?? null;
     const t = TRANSLATIONS[language];
@@ -68,18 +65,6 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             <div className="flex items-center gap-4">
-                {/* 디바이스 연결 — mDNS 발견 메인 + WiFi Direct 보조 (모달 안에서 분기) */}
-                {onConnectClick && (
-                    <button
-                        onClick={onConnectClick}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
-                        title={language === 'ko' ? '디바이스 연결' : 'Connect device'}
-                    >
-                        <Link2 size={14} />
-                        <span>{language === 'ko' ? '디바이스 연결' : 'Connect'}</span>
-                    </button>
-                )}
-
                 {/* 동기화된 파일 — 라벨 + 회전 화살표 아이콘으로 의미 명확히. 카운트 배지 유지. */}
                 <button
                     onClick={onReceivedClick}

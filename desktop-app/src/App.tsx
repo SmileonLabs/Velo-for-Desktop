@@ -17,7 +17,6 @@ import { DeviceManagerModal } from './components/DeviceManagerModal';
 import { ReceivedFilesModal, type ReceivedFile } from './components/ReceivedFilesModal';
 import { ToastStack, type ToastItem } from './components/Toast';
 import { FolderSidebar, type FolderScanSummary } from './components/FolderSidebar';
-import { DeviceConnectModal } from './components/DeviceConnectModal';
 import { FileText, Folder as FolderIcon } from 'lucide-react';
 import { supabase } from './supabase';
 import type { Session } from '@supabase/supabase-js';
@@ -104,15 +103,6 @@ const App: React.FC = () => {
     const [receivedFiles, setReceivedFiles] = useState<ReceivedFile[]>([]);
     const [saveDir, setSaveDir] = useState<string | null>(null);
     const [showReceived, setShowReceived] = useState<boolean>(false);
-
-    // 디바이스 연결 모달 — mDNS 메인 + WiFi Direct 보조 (어댑터 있을 때만).
-    const [wifiDirectSupported, setWifiDirectSupported] = useState<boolean>(false);
-    const [showDeviceConnect, setShowDeviceConnect] = useState<boolean>(false);
-    useEffect(() => {
-        invoke<boolean>('wifi_direct_supported')
-            .then((ok) => setWifiDirectSupported(ok))
-            .catch(() => setWifiDirectSupported(false));
-    }, []);
 
     // 수신 알림 toast. file-received 이벤트마다 우상단에 3.5초 표시.
     const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -1050,7 +1040,6 @@ const App: React.FC = () => {
                 onDevicesClick={() => setShowDevices(true)}
                 onReceivedClick={() => setShowReceived(true)}
                 receivedCount={receivedFiles.length}
-                onConnectClick={() => setShowDeviceConnect(true)}
             />
             {updateInfo && (
                 <div className="mx-4 mt-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
@@ -1208,13 +1197,6 @@ const App: React.FC = () => {
                 }}
             />
             <ToastStack toasts={toasts} onDismiss={dismissToast} />
-
-            <DeviceConnectModal
-                isOpen={showDeviceConnect}
-                onClose={() => setShowDeviceConnect(false)}
-                language={language}
-                wifiDirectSupported={wifiDirectSupported}
-            />
         </div>
     );
 };
