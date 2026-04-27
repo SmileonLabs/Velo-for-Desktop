@@ -3,6 +3,7 @@ import { X, FolderOpen, FileVideo, FileImage, FileIcon, Trash2, FolderCog, Smart
 import { invoke } from '@tauri-apps/api/core';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { Language } from '../types';
+import { TRANSLATIONS } from '../constants';
 
 // 폰에서 받은 파일 내역. SQLite DB(received_files)에서 로드.
 // App.tsx에서 DB 조회 결과 + 실시간 이벤트 합쳐 전달.
@@ -139,7 +140,7 @@ export const ReceivedFilesModal: React.FC<ReceivedFilesModalProps> = ({
 
         <div className="mb-4">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            {language === 'ko' ? '폰에서 받은 파일' : 'Received from phone'}
+            {TRANSLATIONS[language].receivedFiles}
           </h2>
           {saveDir && (
             <p className="mt-1 text-xs text-gray-500 dark:text-slate-400 truncate font-mono">
