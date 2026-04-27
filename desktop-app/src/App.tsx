@@ -20,7 +20,7 @@ import { FolderSidebar, type FolderScanSummary } from './components/FolderSideba
 import { FileText, Folder as FolderIcon } from 'lucide-react';
 import { supabase } from './supabase';
 import type { Session } from '@supabase/supabase-js';
-import { registerDesktopDevice, startHeartbeat, touchDeviceHeartbeat } from './deviceRegistration';
+import { registerDesktopDevice, startHeartbeat } from './deviceRegistration';
 
 // 완료 Toast subtitle용 간단 포매터. 크기 단위 자동 선택.
 function formatBytesShort(bytes: number): string {
@@ -182,10 +182,9 @@ const App: React.FC = () => {
             }
             if (newSession?.user?.id) {
                 const userId = newSession.user.id;
+                // registerDesktopDevice가 이미 last_seen_at 갱신 — 직후의 별도 heartbeat 호출은 중복.
+                // 1초 후 첫 갱신은 timer로 양도해 즉각적인 Supabase 왕복 부하 줄임.
                 void registerDesktopDevice(userId);
-                // 즉시 1회 + 이후 주기적 heartbeat. registerDesktopDevice 직후라 첫 1회는 과하지만
-                // 등록 실패/지연 시에도 last_seen_at이 살아있도록 안전망.
-                void touchDeviceHeartbeat(userId);
                 heartbeatTimer = startHeartbeat(userId);
             }
         };
@@ -248,6 +247,7 @@ const App: React.FC = () => {
 
     // OAuth deep link 수신 (velo://auth-callback#access_token=...) — 브라우저에서 구글/애플 로그인
     // 완료 시 Supabase가 우리 앱으로 리다이렉트. URL fragment에서 토큰 추출 → 세션 주입.
+    // setSession은 Supabase 서버 검증으로 1~2초 걸리므로 토큰 받자마자 LoginModal 즉시 닫아 체감 지연 감소.
     useEffect(() => {
         let unlisten: (() => void) | undefined;
         (async () => {
@@ -262,6 +262,9 @@ const App: React.FC = () => {
                         const accessToken = params.get('access_token');
                         const refreshToken = params.get('refresh_token');
                         if (accessToken && refreshToken) {
+                            // 토큰 받은 즉시 모달 닫음 — UI는 setSession 완료 기다리지 않고 빠른 전환.
+                            // 세션은 onAuthStateChange가 백그라운드에서 처리.
+                            setShowLogin(false);
                             void supabase.auth.setSession({
                                 access_token: accessToken,
                                 refresh_token: refreshToken,

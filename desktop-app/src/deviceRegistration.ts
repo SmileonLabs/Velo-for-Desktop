@@ -48,17 +48,19 @@ export function startHeartbeat(userId: string): ReturnType<typeof setInterval> {
 // 현재 데스크탑을 Supabase user_devices 테이블에 등록/갱신 + 파일 수신 HTTP 서버 시작.
 //
 // 동작:
-//   1) Rust start_sync_server 호출 → 랜덤 포트로 axum 서버 띄움 + local IP/save_dir 반환
-//   2) machine_id + 기기 이름 + platform + app version 수집
-//   3) user_devices 테이블에 upsert (is_receiver=true + port + local_ip 포함)
+//   1) Rust start_sync_server / get_machine_id / get_device_info / getVersion 4개 호출을 병렬화
+//      (이전엔 순차 await — 4 × IPC 왕복 = 200~800ms 누적. 병렬로 가장 느린 1번만큼만 걸림)
+//   2) user_devices 테이블에 upsert (is_receiver=true + port + local_ip 포함)
 //
 // 실패 시 앱 나머지 기능엔 영향 없음 — 로깅만 남기고 조용히 넘어감.
 export async function registerDesktopDevice(userId: string): Promise<void> {
   try {
-    const server: SyncServerInfo = await invoke('start_sync_server');
-    const machineId = await invoke<string>('get_machine_id');
-    const info = await invoke<{ platform: string; hostname: string }>('get_device_info');
-    const appVersion = await getVersion();
+    const [server, machineId, info, appVersion] = await Promise.all([
+      invoke<SyncServerInfo>('start_sync_server'),
+      getDeviceId(), // 캐시된 값 재사용 — heartbeat과 중복 호출 제거
+      invoke<{ platform: string; hostname: string }>('get_device_info'),
+      getVersion(),
+    ]);
 
     const { error } = await supabase
       .from('user_devices')
