@@ -2,13 +2,16 @@
 // 안드 측이 P2P Group Owner로 만든 임시 SSID에 데스크탑이 자동 페어링.
 //
 // 플랫폼 분기:
-//   - Windows: Windows.Devices.WiFiDirect (WinRT) API 사용 (D2에서 windows-rs 바인딩)
+//   - Windows: Windows.Devices.WiFiDirect (WinRT) API 사용
 //   - macOS / Linux: Apple/플랫폼 정책상 정식 미지원 — 더미 stub만 두고 호출 시 에러 반환
 //
 // 책임 범위:
-//   1. 안드 P2P 그룹 SSID/passphrase 받아 OS Wi-Fi 연결 시도 (D3)
+//   1. 안드 P2P 그룹 SSID 부분 매칭 → 자동 페어링
 //   2. 연결 성공 시 mDNS 발견은 기존 sync_server·sync_store가 자동 수행
 //   3. 연결 해제 / 그룹 사라지면 OS가 알아서 정리
+//
+// passphrase 메모: WiFi Direct 표준 페어링은 PIN/PBC 방식이라 passphrase를 직접 사용하지 않음.
+// 그래도 시그니처는 유지 — 안드 호환성 검증 후 WlanAPI 전환 시 활용 예정.
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -41,46 +44,42 @@ pub fn is_supported() -> bool {
     cfg!(target_os = "windows")
 }
 
-// MARK: - Windows 구현 — Windows.Devices.WiFiDirect WinRT API
+// MARK: - Windows 구현 — Microsoft 공식 WiFi Direct 페어링 패턴
 //
-// 흐름 (안드 P2P Group Owner와 페어링):
-//   1) WiFiDirectDevice.GetDeviceSelector(ConnectionEndpointPairCollection) — 발견 selector
-//   2) DeviceInformation.FindAllAsync(selector) — 주변 P2P 광고 수집
-//   3) SSID 매칭 → WiFiDirectDevice.FromIdAsync — 디바이스 인스턴스
-//   4) PairAsync(passphrase) — WPS-PSK 페어링
-//   5) 성공 시 ConnectionStatus.Connected → 같은 LAN으로 OS 인식 → mDNS 자동
+// Microsoft 권장 흐름:
+//   1) WiFiDirectDevice::GetDeviceSelector — 발견 selector 획득
+//   2) DeviceInformation::FindAllAsyncAqsFilter(selector) — 주변 P2P 광고 수집
+//   3) SSID 부분 매칭 (Name contains)
+//   4) WiFiDirectConnectionParameters 생성 + GroupOwnerIntent=0 (안드가 GO이므로 윈도우는 client)
+//   5) WiFiDirectDevice::FromIdAsync2(deviceId, connectionParams) — 페어링 + 연결 동시 트리거
+//   6) device.ConnectionStatus() == Connected 확인
 //
-// 참고: D3에서 SSID 발견 + 매칭 로직 보강. D2는 페어링 핵심 호출만.
+// 참고: <https://learn.microsoft.com/en-us/uwp/api/windows.devices.wifidirect.wifidirectdevice.fromidasync>
 #[cfg(target_os = "windows")]
 mod windows_impl {
     use super::WifiDirectPairResult;
-    use windows::core::HSTRING;
-    use windows::Devices::Enumeration::{DeviceInformation, DeviceInformationKind};
+    use windows::Devices::Enumeration::DeviceInformation;
     use windows::Devices::WiFiDirect::{
-        WiFiDirectConnectionParameters, WiFiDirectDevice,
+        WiFiDirectConnectionParameters, WiFiDirectConnectionStatus, WiFiDirectDevice,
     };
 
-    pub async fn pair(ssid: &str, passphrase: &str) -> Result<WifiDirectPairResult, String> {
-        // 1) WiFi Direct 페어링 가능 디바이스 selector — AssociationEndpoint.
+    pub async fn pair(ssid: &str, _passphrase: &str) -> Result<WifiDirectPairResult, String> {
+        // 1) WiFi Direct 페어링 가능 디바이스 selector.
         let selector = WiFiDirectDevice::GetDeviceSelector()
             .map_err(|e| format!("GetDeviceSelector: {}", e))?;
 
-        // 2) 주변 P2P 광고 검색.
-        let devices = DeviceInformation::FindAllAsyncAqsFilterAndKind(
-            &selector,
-            None,
-            DeviceInformationKind::AssociationEndpoint,
-        )
-        .map_err(|e| format!("FindAllAsync init: {}", e))?
-        .await
-        .map_err(|e| format!("FindAllAsync await: {}", e))?;
+        // 2) 주변 P2P 광고 검색 (단순 AqsFilter 형태로 — Kind는 selector에 이미 포함).
+        let devices = DeviceInformation::FindAllAsyncAqsFilter(&selector)
+            .map_err(|e| format!("FindAllAsync init: {}", e))?
+            .await
+            .map_err(|e| format!("FindAllAsync await: {}", e))?;
 
-        let target_ssid = ssid.to_string();
+        // 3) SSID 부분 매칭 — 안드 P2P GO는 보통 "DIRECT-xx-Velo..." 형식.
         let target = (0..devices.Size().unwrap_or(0))
             .filter_map(|i| devices.GetAt(i).ok())
             .find(|d| {
                 d.Name()
-                    .map(|n| n.to_string_lossy().contains(&target_ssid))
+                    .map(|n| n.to_string_lossy().contains(ssid))
                     .unwrap_or(false)
             });
 
@@ -89,40 +88,34 @@ mod windows_impl {
             None => {
                 return Ok(WifiDirectPairResult {
                     success: false,
-                    message: format!("주변에서 SSID '{}'를 찾지 못했습니다. 폰에서 호스트가 켜져 있는지 확인하세요.", ssid),
+                    message: format!(
+                        "주변에서 SSID '{}'를 찾지 못했습니다. 폰에서 호스트가 켜져 있는지 확인하세요.",
+                        ssid
+                    ),
                 });
             }
         };
 
-        // 3) WiFiDirectDevice 인스턴스 획득.
+        // 4) ConnectionParameters — 안드가 GO이므로 윈도우는 client (intent=0).
+        let conn_params = WiFiDirectConnectionParameters::new()
+            .map_err(|e| format!("ConnectionParameters: {}", e))?;
+        conn_params
+            .SetGroupOwnerIntent(0)
+            .map_err(|e| format!("SetGroupOwnerIntent: {}", e))?;
+
+        // 5) FromIdAsync2 — 2-arg overload (deviceId + connectionParams).
+        //    이 호출 자체가 "페어링 + 연결" 트리거.
         let device_id = target.Id().map_err(|e| format!("Id: {}", e))?;
-        let _ = WiFiDirectDevice::FromIdAsync(&device_id)
+        let device = WiFiDirectDevice::FromIdAsync2(&device_id, &conn_params)
             .map_err(|e| format!("FromIdAsync init: {}", e))?
             .await
             .map_err(|e| format!("FromIdAsync await: {}", e))?;
 
-        // 4) PairAsync — passphrase 기반 WPS-PSK.
-        // WiFiDirectConnectionParameters에 PIN 또는 push-button 모드 설정.
-        // passphrase는 OS의 페어링 다이얼로그에서 자동 입력되거나 무음 처리.
-        let pairing = target.Pairing().map_err(|e| format!("Pairing: {}", e))?;
-        let _params = WiFiDirectConnectionParameters::new()
-            .map_err(|e| format!("ConnectionParameters: {}", e))?;
-        // PIN 모드 명시. Windows가 passphrase를 알아서 처리하도록 비대화형으로.
-        let pin_hstring = HSTRING::from(passphrase);
-        let result = pairing
-            .PairWithProtectionLevelAndSettingsAsync(
-                windows::Devices::Enumeration::DevicePairingProtectionLevel::Default,
-                &windows::Devices::Enumeration::DevicePairingSettings::new()
-                    .map_err(|e| format!("PairingSettings: {}", e))?,
-            )
-            .map_err(|e| format!("PairAsync init: {}", e))?
-            .await
-            .map_err(|e| format!("PairAsync await: {}", e))?;
-        let _ = pin_hstring; // passphrase는 OS에 미리 등록되거나 사용자 다이얼로그.
-
-        let status = result.Status().map_err(|e| format!("Status: {}", e))?;
-        // status 0 = Paired
-        let success = status == windows::Devices::Enumeration::DevicePairingResultStatus::Paired;
+        // 6) 연결 상태 확인.
+        let status = device
+            .ConnectionStatus()
+            .map_err(|e| format!("ConnectionStatus: {}", e))?;
+        let success = status == WiFiDirectConnectionStatus::Connected;
 
         Ok(WifiDirectPairResult {
             success,

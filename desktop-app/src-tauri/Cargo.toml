@@ -35,8 +35,9 @@ mdns-sd = "0.13"
 
 # Wi-Fi Direct (Windows 전용) — Windows.Devices.WiFiDirect WinRT API 호출.
 # macOS·Linux에서는 컴파일 자체 안 됨 → target_os 분기로 의존성 격리.
+# 0.61+ 부터 IAsyncOperation에 IntoFuture 자동 구현 → .await 사용 가능.
 [target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.58", features = [
+windows = { version = "0.61", features = [
     "Devices_WiFiDirect",
     "Devices_Enumeration",
     "Foundation",
