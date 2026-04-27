@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Moon, Sun, ExternalLink, LogIn, LogOut, User, Laptop, RefreshCw, Globe, ChevronDown, Check, Wifi
+    Moon, Sun, ExternalLink, LogIn, LogOut, User, Laptop, RefreshCw, Globe, ChevronDown, Check, Link2
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { Language, LANGUAGES } from '../types';
@@ -17,16 +17,15 @@ interface HeaderProps {
     onDevicesClick: () => void;
     onReceivedClick: () => void;
     receivedCount: number;
-    // Wi-Fi Direct (Windows 전용) — supported false면 버튼 자체 숨김.
-    wifiDirectSupported?: boolean;
-    onWifiDirectClick?: () => void;
+    // 디바이스 연결 모달 진입점 — mDNS 발견 메인 + WiFi Direct 보조.
+    onConnectClick?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
     theme, setTheme, language, setLanguage,
     session, onLoginClick, onLogoutClick, onDevicesClick,
     onReceivedClick, receivedCount,
-    wifiDirectSupported, onWifiDirectClick,
+    onConnectClick,
 }) => {
     const userEmail = session?.user?.email ?? null;
     const t = TRANSLATIONS[language];
@@ -69,15 +68,15 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             <div className="flex items-center gap-4">
-                {/* Wi-Fi Direct (Windows 전용) — 안드 P2P 그룹과 자동 페어링 */}
-                {wifiDirectSupported && onWifiDirectClick && (
+                {/* 디바이스 연결 — mDNS 발견 메인 + WiFi Direct 보조 (모달 안에서 분기) */}
+                {onConnectClick && (
                     <button
-                        onClick={onWifiDirectClick}
+                        onClick={onConnectClick}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
-                        title={language === 'ko' ? 'Wi-Fi Direct 연결' : 'Wi-Fi Direct'}
+                        title={language === 'ko' ? '디바이스 연결' : 'Connect device'}
                     >
-                        <Wifi size={14} />
-                        <span>Wi-Fi Direct</span>
+                        <Link2 size={14} />
+                        <span>{language === 'ko' ? '디바이스 연결' : 'Connect'}</span>
                     </button>
                 )}
 
