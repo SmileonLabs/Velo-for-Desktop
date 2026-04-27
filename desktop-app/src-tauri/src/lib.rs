@@ -3,6 +3,7 @@ use std::sync::Mutex;
 
 mod sync_server;
 mod mdns_advertiser;
+mod mdns_discoverer;
 mod sync_store;
 mod folder_scanner;
 mod compression_store;
@@ -87,6 +88,28 @@ fn ensure_dir(path: String) -> Result<(), String> {
     std::fs::create_dir_all(&path).map_err(|e| format!("create dir: {}", e))
 }
 
+// 다른 Velo 기기 발견 시작 — 첫 호출 시에만 실제 browser 시작, 이후 무동작.
+// 자기 자신 device_id는 결과에서 자동 제외 (mdns_advertiser와 같은 광고를 받아도 무시).
+#[tauri::command]
+fn start_device_discovery() -> Result<(), String> {
+    let mut lock = MDNS_BROWSER.lock().map_err(|e| e.to_string())?;
+    if lock.is_some() {
+        return Ok(());
+    }
+    let own_device_id = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
+    let handle = mdns_discoverer::MdnsBrowserHandle::start(own_device_id)?;
+    *lock = Some(Arc::new(handle));
+    Ok(())
+}
+
+// 현재까지 발견된 다른 Velo 기기 목록 (스냅샷).
+// 프론트는 이 명령을 1~2초 polling 또는 별도 트리거로 호출.
+#[tauri::command]
+fn discover_devices() -> Result<Vec<mdns_discoverer::DiscoveredDevice>, String> {
+    let lock = MDNS_BROWSER.lock().map_err(|e| e.to_string())?;
+    Ok(lock.as_ref().map(|h| h.list()).unwrap_or_default())
+}
+
 // Wi-Fi Direct 자동 페어링 — 안드 P2P SSID에 Windows가 자동 접속.
 // macOS·Linux는 stub이 미지원 응답 반환 (UI에서 비활성화).
 #[tauri::command]
@@ -131,6 +154,8 @@ static MDNS_HANDLE: Mutex<Option<mdns_advertiser::MdnsHandle>> = Mutex::new(None
 static SYNC_STORE: Mutex<Option<Arc<SyncStore>>> = Mutex::new(None);
 // 압축 세션 기록용 별도 store. 같은 DB 파일 공유, 다른 테이블.
 static COMPRESSION_STORE: Mutex<Option<Arc<compression_store::CompressionStore>>> = Mutex::new(None);
+// mDNS browser — 다른 Velo 기기 (폰·다른 데스크탑) 발견. 백그라운드 thread가 cache 갱신.
+static MDNS_BROWSER: Mutex<Option<Arc<mdns_discoverer::MdnsBrowserHandle>>> = Mutex::new(None);
 
 fn ensure_store() -> Result<Arc<SyncStore>, String> {
     let mut lock = SYNC_STORE.lock().map_err(|e| e.to_string())?;
@@ -407,6 +432,8 @@ pub fn run() {
             ensure_dir,
             wifi_direct_pair,
             wifi_direct_supported,
+            start_device_discovery,
+            discover_devices,
             file_exists,
             compress_session_start,
             compress_record_insert,
