@@ -17,7 +17,8 @@ import { DeviceManagerModal } from './components/DeviceManagerModal';
 import { ReceivedFilesModal, type ReceivedFile } from './components/ReceivedFilesModal';
 import { ToastStack, type ToastItem } from './components/Toast';
 import { FolderSidebar, type FolderScanSummary } from './components/FolderSidebar';
-import { FileText, Folder as FolderIcon } from 'lucide-react';
+import { WifiDirectPairModal } from './components/WifiDirectPairModal';
+import { FileText, Folder as FolderIcon, Wifi } from 'lucide-react';
 import { supabase } from './supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerDesktopDevice, startHeartbeat } from './deviceRegistration';
@@ -103,6 +104,15 @@ const App: React.FC = () => {
     const [receivedFiles, setReceivedFiles] = useState<ReceivedFile[]>([]);
     const [saveDir, setSaveDir] = useState<string | null>(null);
     const [showReceived, setShowReceived] = useState<boolean>(false);
+
+    // Wi-Fi Direct 자동 페어링 — Windows 전용. wifi_direct_supported invoke 결과로 토글 표시 결정.
+    const [wifiDirectSupported, setWifiDirectSupported] = useState<boolean>(false);
+    const [showWifiDirect, setShowWifiDirect] = useState<boolean>(false);
+    useEffect(() => {
+        invoke<boolean>('wifi_direct_supported')
+            .then((ok) => setWifiDirectSupported(ok))
+            .catch(() => setWifiDirectSupported(false));
+    }, []);
 
     // 수신 알림 toast. file-received 이벤트마다 우상단에 3.5초 표시.
     const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -1040,6 +1050,8 @@ const App: React.FC = () => {
                 onDevicesClick={() => setShowDevices(true)}
                 onReceivedClick={() => setShowReceived(true)}
                 receivedCount={receivedFiles.length}
+                wifiDirectSupported={wifiDirectSupported}
+                onWifiDirectClick={() => setShowWifiDirect(true)}
             />
             {updateInfo && (
                 <div className="mx-4 mt-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
@@ -1197,6 +1209,12 @@ const App: React.FC = () => {
                 }}
             />
             <ToastStack toasts={toasts} onDismiss={dismissToast} />
+
+            <WifiDirectPairModal
+                isOpen={showWifiDirect}
+                onClose={() => setShowWifiDirect(false)}
+                language={language}
+            />
         </div>
     );
 };
