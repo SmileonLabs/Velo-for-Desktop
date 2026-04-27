@@ -33,5 +33,17 @@ dirs = "5.0"
 # mDNS/Bonjour 광고 — 폰이 같은 LAN에서 "_velo._tcp" 서비스를 검색해 데스크탑 자동 발견
 mdns-sd = "0.13"
 
+# Wi-Fi Direct (Windows 전용) — Windows.Devices.WiFiDirect WinRT API 호출.
+# macOS·Linux에서는 컴파일 자체 안 됨 → target_os 분기로 의존성 격리.
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.58", features = [
+    "Devices_WiFiDirect",
+    "Devices_Enumeration",
+    "Foundation",
+    "Foundation_Collections",
+    "Networking_Connectivity",
+    "Storage_Streams",
+] }
+
 [build-dependencies]
 tauri-build = { version = "2.0", features = [] }
