@@ -45,7 +45,8 @@
         ],
         "externalBin": [
             "binaries/ffmpeg",
-            "binaries/ffprobe"
+            "binaries/ffprobe",
+            "binaries/cloudflared"
         ],
         "windows": {
             "wix": {

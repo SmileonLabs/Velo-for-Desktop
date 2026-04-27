@@ -96,11 +96,43 @@ pub fn start(local_port: u16) -> Result<CloudflaredHandle, String> {
     })
 }
 
-// PATH → 일반적 설치 경로 순으로 탐색.
+// 번들 sidecar → dev sidecar → PATH → 일반 설치 경로 순으로 탐색.
+//
+// Tauri가 externalBin으로 등록된 cloudflared를:
+//   - production: main exe와 같은 디렉토리에 "cloudflared{ext}" 이름으로 복사
+//   - dev: target/{profile}/ 에 "cloudflared-{TARGET_TRIPLE}{ext}" 이름으로 복사
 fn which_cloudflared() -> Result<String, String> {
+    let exe_name = if cfg!(target_os = "windows") {
+        "cloudflared.exe"
+    } else {
+        "cloudflared"
+    };
+    let dev_exe_name = format!(
+        "cloudflared-{}{}",
+        env!("TARGET_TRIPLE"),
+        if cfg!(target_os = "windows") { ".exe" } else { "" }
+    );
+
+    // 1) main 실행 파일 옆에 번들된 sidecar
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let prod = dir.join(exe_name);
+            if prod.exists() {
+                return Ok(prod.to_string_lossy().into_owned());
+            }
+            let dev = dir.join(&dev_exe_name);
+            if dev.exists() {
+                return Ok(dev.to_string_lossy().into_owned());
+            }
+        }
+    }
+
+    // 2) PATH (개발자가 brew/winget으로 직접 설치한 케이스)
     if Command::new("cloudflared").arg("--version").output().is_ok() {
         return Ok("cloudflared".to_string());
     }
+
+    // 3) 일반적 설치 경로 (PATH 누락 케이스)
     let candidates: &[&str] = if cfg!(target_os = "macos") {
         &[
             "/opt/homebrew/bin/cloudflared",
