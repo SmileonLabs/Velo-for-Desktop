@@ -40,8 +40,16 @@ pub async fn pair(ssid: String, passphrase: String) -> Result<WifiDirectPairResu
 }
 
 /// 이 OS에서 Wi-Fi Direct 자동 페어링 가능 여부. UI 토글 표시 결정에 사용.
+/// Windows라도 Wi-Fi 어댑터가 없으면 (랜선 데스크탑 등) false.
 pub fn is_supported() -> bool {
-    cfg!(target_os = "windows")
+    #[cfg(target_os = "windows")]
+    {
+        windows_impl::has_wifi_adapter()
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        false
+    }
 }
 
 // MARK: - Windows 구현 — Microsoft 공식 WiFi Direct 페어링 패턴
@@ -62,6 +70,18 @@ mod windows_impl {
     use windows::Devices::WiFiDirect::{
         WiFiDirectConnectionParameters, WiFiDirectConnectionStatus, WiFiDirectDevice,
     };
+    use windows::Networking::Connectivity::NetworkInformation;
+
+    /// Wi-Fi 어댑터(또는 활성 WLAN 프로파일) 존재 여부.
+    /// 랜선만 연결된 데스크탑은 false → UI에서 WiFi Direct 보조 옵션 자동 숨김.
+    pub fn has_wifi_adapter() -> bool {
+        match NetworkInformation::GetConnectionProfiles() {
+            Ok(profiles) => (0..profiles.Size().unwrap_or(0))
+                .filter_map(|i| profiles.GetAt(i).ok())
+                .any(|p| p.IsWlanConnectionProfile().unwrap_or(false)),
+            Err(_) => false,
+        }
+    }
 
     pub async fn pair(ssid: &str, _passphrase: &str) -> Result<WifiDirectPairResult, String> {
         // 1) WiFi Direct 페어링 가능 디바이스 selector.
