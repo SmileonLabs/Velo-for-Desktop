@@ -4902,6 +4902,7 @@ dependencies = [
  "tokio",
  "trash",
  "windows 0.61.3",
+ "windows-future",
 ]
 
 [[package]]
