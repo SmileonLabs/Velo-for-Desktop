@@ -1,12 +1,12 @@
 import React from 'react';
 import { X, ShieldCheck, Scale, Globe, Link as LinkIcon, BookOpen, AlertTriangle } from 'lucide-react';
-import { Translation } from '../types';
+import { Translation, Language } from '../types';
 
 interface LegalModalProps {
     isOpen: boolean;
     onClose: () => void;
     t: Translation;
-    language: 'ko' | 'en';
+    language: Language;
 }
 
 export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, t, language }) => {

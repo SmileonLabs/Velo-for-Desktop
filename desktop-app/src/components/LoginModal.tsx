@@ -22,7 +22,8 @@ interface Copy {
   errorOAuth: string;
 }
 
-const COPY: Record<Language, Copy> = {
+// 모바일과 동일 10개국어. 누락된 언어는 영어로 fallback (COPY[lang] ?? COPY.en).
+const COPY: Partial<Record<Language, Copy>> = {
   ko: {
     title: 'Velo 시작하기',
     subtitle: '모바일 Velo 앱에서 사용하는 계정으로 계속 진행하세요.',
@@ -36,6 +37,62 @@ const COPY: Record<Language, Copy> = {
     continueGoogle: 'Continue with Google',
     continueApple: 'Continue with Apple',
     errorOAuth: 'Sign-in failed. Please try again.',
+  },
+  ja: {
+    title: 'Veloを始める',
+    subtitle: 'モバイルVeloアプリで使用しているアカウントで続行してください。',
+    continueGoogle: 'Googleで続行',
+    continueApple: 'Appleで続行',
+    errorOAuth: 'ログインに失敗しました。しばらくしてから再度お試しください。',
+  },
+  zh: {
+    title: '开始使用 Velo',
+    subtitle: '使用您在移动 Velo 应用中的账户继续。',
+    continueGoogle: '使用 Google 继续',
+    continueApple: '使用 Apple 继续',
+    errorOAuth: '登录失败,请稍后重试。',
+  },
+  es: {
+    title: 'Comienza con Velo',
+    subtitle: 'Continúa con tu cuenta de Velo móvil.',
+    continueGoogle: 'Continuar con Google',
+    continueApple: 'Continuar con Apple',
+    errorOAuth: 'Error al iniciar sesión. Inténtalo de nuevo.',
+  },
+  fr: {
+    title: 'Commencer avec Velo',
+    subtitle: 'Continuez avec votre compte Velo mobile.',
+    continueGoogle: 'Continuer avec Google',
+    continueApple: 'Continuer avec Apple',
+    errorOAuth: 'Échec de la connexion. Veuillez réessayer.',
+  },
+  de: {
+    title: 'Mit Velo loslegen',
+    subtitle: 'Mit Ihrem mobilen Velo-Konto fortfahren.',
+    continueGoogle: 'Mit Google fortfahren',
+    continueApple: 'Mit Apple fortfahren',
+    errorOAuth: 'Anmeldung fehlgeschlagen. Bitte erneut versuchen.',
+  },
+  pt: {
+    title: 'Começar com Velo',
+    subtitle: 'Continue com sua conta Velo do celular.',
+    continueGoogle: 'Continuar com Google',
+    continueApple: 'Continuar com Apple',
+    errorOAuth: 'Falha no login. Tente novamente.',
+  },
+  ru: {
+    title: 'Начать с Velo',
+    subtitle: 'Продолжите с учётной записью мобильного приложения Velo.',
+    continueGoogle: 'Продолжить с Google',
+    continueApple: 'Продолжить с Apple',
+    errorOAuth: 'Не удалось войти. Попробуйте позже.',
+  },
+  hi: {
+    title: 'Velo से शुरू करें',
+    subtitle: 'अपने मोबाइल Velo खाते के साथ जारी रखें।',
+    continueGoogle: 'Google के साथ जारी रखें',
+    continueApple: 'Apple के साथ जारी रखें',
+    errorOAuth: 'साइन-इन विफल। कृपया फिर से प्रयास करें।',
   },
 };
 
@@ -57,7 +114,7 @@ const AppleLogo: React.FC<{ size?: number }> = ({ size = 18 }) => (
 );
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, language, forced = false }) => {
-  const copy = COPY[language];
+  const copy = COPY[language] ?? COPY.en!;
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

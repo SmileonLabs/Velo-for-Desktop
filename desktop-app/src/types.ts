@@ -44,7 +44,22 @@ export interface CompressionSettings {
     imageQuality: number; // 1-100
 }
 
-export type Language = 'en' | 'ko';
+// iOS/Android와 동일한 10개국어. 추가 시 constants.ts TRANSLATIONS도 같이 갱신.
+export type Language = 'en' | 'ko' | 'ja' | 'zh' | 'es' | 'fr' | 'de' | 'pt' | 'ru' | 'hi';
+
+// 언어 selector 표시용 메타데이터.
+export const LANGUAGES: Array<{ code: Language; label: string; native: string }> = [
+    { code: 'ko', label: 'Korean',     native: '한국어' },
+    { code: 'en', label: 'English',    native: 'English' },
+    { code: 'ja', label: 'Japanese',   native: '日本語' },
+    { code: 'zh', label: 'Chinese',    native: '中文' },
+    { code: 'es', label: 'Spanish',    native: 'Español' },
+    { code: 'fr', label: 'French',     native: 'Français' },
+    { code: 'de', label: 'German',     native: 'Deutsch' },
+    { code: 'pt', label: 'Portuguese', native: 'Português' },
+    { code: 'ru', label: 'Russian',    native: 'Русский' },
+    { code: 'hi', label: 'Hindi',      native: 'हिन्दी' },
+];
 
 export interface Translation {
     dropText: string;

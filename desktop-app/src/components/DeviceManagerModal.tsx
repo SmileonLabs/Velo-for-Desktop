@@ -41,7 +41,8 @@ interface Copy {
   loadError: string;
 }
 
-const COPY: Record<Language, Copy> = {
+// 모바일과 동일 10개국어. 누락 언어는 영어로 fallback.
+const COPY: Partial<Record<Language, Copy>> = {
   ko: {
     title: '내 기기',
     subtitle: '이 계정에 연결된 모든 기기 목록입니다.',
@@ -105,7 +106,7 @@ function formatLastSeen(iso: string, copy: Copy): string {
 export const DeviceManagerModal: React.FC<DeviceManagerModalProps> = ({
   isOpen, onClose, userId, language, currentMachineId,
 }) => {
-  const copy = COPY[language];
+  const copy = COPY[language] ?? COPY.en!;
   const [devices, setDevices] = useState<DeviceRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

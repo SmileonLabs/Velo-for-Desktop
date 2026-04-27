@@ -1,9 +1,9 @@
 import React from 'react';
 import {
-    Moon, Sun, ExternalLink, LogIn, LogOut, User, Laptop, Inbox
+    Moon, Sun, ExternalLink, LogIn, LogOut, User, Laptop, Inbox, Globe, ChevronDown
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
-import { Language } from '../types';
+import { Language, LANGUAGES } from '../types';
 
 interface HeaderProps {
     theme: 'light' | 'dark';
@@ -92,26 +92,20 @@ export const Header: React.FC<HeaderProps> = ({
                     </button>
                 )}
 
-                {/* Language Selector */}
-                <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-900 p-1 rounded-full border border-gray-200 dark:border-slate-800">
-                    <button
-                        onClick={() => setLanguage('en')}
-                        className={`px-3 py-1 text-xs font-medium rounded-full transition-all ${language === 'en'
-                            ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-300 shadow-sm'
-                            : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200'
-                            }`}
+                {/* Language Selector — 10개 언어 (모바일과 동일 셋트) */}
+                <div className="relative">
+                    <select
+                        value={language}
+                        onChange={(e) => setLanguage(e.target.value as Language)}
+                        className="appearance-none cursor-pointer bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-full pl-7 pr-8 py-1.5 text-xs font-medium text-gray-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                        aria-label="Language"
                     >
-                        EN
-                    </button>
-                    <button
-                        onClick={() => setLanguage('ko')}
-                        className={`px-3 py-1 text-xs font-medium rounded-full transition-all ${language === 'ko'
-                            ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-300 shadow-sm'
-                            : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200'
-                            }`}
-                    >
-                        한국어
-                    </button>
+                        {LANGUAGES.map((l) => (
+                            <option key={l.code} value={l.code}>{l.native}</option>
+                        ))}
+                    </select>
+                    <Globe size={12} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400" />
+                    <ChevronDown size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400" />
                 </div>
 
                 {/* Theme Toggle */}
