@@ -154,4 +154,17 @@ export interface Translation {
     updateAvailable: string;
     updateButton: string;
     dismissButton: string;
+
+    // FolderSidebar (폴더 압축 모드)
+    folderDropPrompt: string;
+    folderDropDescription: string;
+    folderDropOutput: string;
+    folderFilesUnit: string;
+    folderPickAnother: string;
+    folderScannedFiles: string;
+    folderEmpty: string;
+    folderExcludeTooltip: string;
+
+    // BottomBar — {count} placeholder 포함
+    readyToProcess: string;
 }

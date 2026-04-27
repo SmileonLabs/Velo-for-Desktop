@@ -1,6 +1,7 @@
 import React from 'react';
 import { FolderOpen, FolderSearch, Files, FileVideo, Image as ImageIcon, FileIcon, RefreshCw, X } from 'lucide-react';
 import { VideoFile, Language } from '../types';
+import { TRANSLATIONS } from '../constants';
 
 // 폴더 압축 모드 Sidebar. iOS/Android의 "폴더 압축" 개념을 데스크탑 파일시스템 기반으로 이식.
 // 입력: 폴더 드래그 or 폴더 선택 다이얼로그.
@@ -53,6 +54,7 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({
     scan, files, isProcessing, language,
     onPickFolder, onDropFolder, onReset, onRemoveFile,
 }) => {
+    const t = TRANSLATIONS[language];
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
@@ -78,19 +80,13 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({
                         <FolderSearch size={28} />
                     </div>
                     <p className="text-sm text-gray-600 dark:text-slate-300 font-medium text-center">
-                        {language === 'ko'
-                            ? '폴더를 드래그하거나 클릭하여 선택하세요'
-                            : 'Drag a folder here or click to pick one'}
+                        {t.folderDropPrompt}
                     </p>
                     <p className="mt-2 text-xs text-gray-400 dark:text-slate-500 text-center">
-                        {language === 'ko'
-                            ? '하위 모든 폴더까지 재귀 스캔 · 영상/이미지 일괄 압축'
-                            : 'Recursive scan of all subfolders · batch compress media'}
+                        {t.folderDropDescription}
                     </p>
                     <p className="mt-2 text-[11px] text-gray-400 dark:text-slate-500 text-center">
-                        {language === 'ko'
-                            ? '출력: {원본폴더}/_velo_compressed/ (자동 생성)'
-                            : 'Output: {root}/_velo_compressed/ (auto)'}
+                        {t.folderDropOutput}
                     </p>
                 </div>
             </div>
@@ -112,7 +108,7 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({
                         <div className="mt-1 flex items-center gap-3 text-xs text-gray-600 dark:text-slate-300">
                             <span className="inline-flex items-center gap-1 font-semibold">
                                 <Files size={12} />
-                                {scan.totalCount}{language === 'ko' ? '개' : ' files'}
+                                {scan.totalCount} {t.folderFilesUnit}
                             </span>
                             <span>·</span>
                             <span className="font-semibold">{formatBytes(scan.totalBytes)}</span>
@@ -128,7 +124,7 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({
                     <button
                         onClick={onReset}
                         disabled={isProcessing}
-                        title={language === 'ko' ? '다른 폴더' : 'Pick another'}
+                        title={t.folderPickAnother}
                         className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-xs font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
                     >
                         <RefreshCw size={12} />
@@ -140,12 +136,12 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({
             <div className="flex flex-col flex-1 min-h-0">
                 <div className="flex items-center justify-between mb-3">
                     <h2 className="text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                        {language === 'ko' ? '스캔된 파일' : 'Scanned files'}
+                        {t.folderScannedFiles}
                     </h2>
                 </div>
                 {files.length === 0 ? (
                     <p className="text-xs text-gray-400 dark:text-slate-500 py-8 text-center">
-                        {language === 'ko' ? '압축 가능한 파일이 없습니다.' : 'No compressible files found.'}
+                        {t.folderEmpty}
                     </p>
                 ) : (
                     <ul className="flex-1 overflow-y-auto space-y-1.5 pr-1">
@@ -171,7 +167,7 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({
                                     <button
                                         onClick={() => onRemoveFile(f.id)}
                                         className="shrink-0 text-gray-400 hover:text-red-500 transition-colors"
-                                        title={language === 'ko' ? '제외' : 'Exclude'}
+                                        title={t.folderExcludeTooltip}
                                     >
                                         <X size={12} />
                                     </button>

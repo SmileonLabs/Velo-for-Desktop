@@ -67,10 +67,10 @@ export const BottomBar: React.FC<BottomBarProps> = ({
                     <div className="flex items-center text-gray-400 dark:text-slate-500">
                         {isAllComplete ? (
                             <span className="text-green-600 dark:text-green-400 font-medium">
-                                All files processed successfully!
+                                {t.completed}
                             </span>
                         ) : (
-                            <span>Ready to process {files.length} files</span>
+                            <span>{t.readyToProcess.replace('{count}', String(files.length))}</span>
                         )}
                     </div>
                 )}
