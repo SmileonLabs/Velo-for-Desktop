@@ -4883,6 +4883,7 @@ version = "1.0.1"
 dependencies = [
  "axum",
  "dirs 5.0.1",
+ "getrandom 0.2.17",
  "hex",
  "local-ip-address",
  "machine-uid",

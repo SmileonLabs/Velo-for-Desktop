@@ -18,6 +18,10 @@ use std::sync::Arc;
 struct AppSettings {
     #[serde(default)]
     save_dir: Option<String>,
+    // 폰↔데스크탑 인증 토큰 — 첫 실행 시 32바이트 OS 난수로 생성, 이후 영속.
+    // 설정 파일 손상/리셋 시 새 토큰 발급 → 폰은 재페어링 필요.
+    #[serde(default)]
+    pairing_token: Option<String>,
 }
 
 fn settings_path() -> Result<PathBuf, String> {
@@ -43,6 +47,37 @@ fn save_settings(s: &AppSettings) -> Result<(), String> {
     let json = serde_json::to_string_pretty(s).map_err(|e| e.to_string())?;
     std::fs::write(&path, json).map_err(|e| format!("settings write: {}", e))?;
     Ok(())
+}
+
+// 페어링 토큰 보장 — 없으면 32바이트 OS 난수 생성 후 settings.json에 영속.
+// 한 번 생성된 토큰은 기기 재설정 전까지 동일 → 폰은 1회 페어링 후 영구 사용.
+fn ensure_pairing_token() -> Result<String, String> {
+    let mut s = load_settings();
+    if let Some(token) = &s.pairing_token {
+        if !token.is_empty() {
+            return Ok(token.clone());
+        }
+    }
+    let mut bytes = [0u8; 32];
+    getrandom::getrandom(&mut bytes).map_err(|e| format!("os rng: {}", e))?;
+    let token = hex::encode(bytes);
+    s.pairing_token = Some(token.clone());
+    save_settings(&s)?;
+    Ok(token)
+}
+
+// 현재 cloudflared가 발급한 외부 URL — sync_server의 /pair 핸들러에서 호출.
+pub(crate) fn current_external_url() -> Option<String> {
+    CLOUDFLARED
+        .lock()
+        .ok()
+        .and_then(|g| g.as_ref().and_then(|h| h.external_url()))
+}
+
+// 현재 페어링 토큰 — sync_server의 /pair 핸들러에서 호출.
+// 실패 시 빈 문자열 (실제로는 ensure_pairing_token이 start_sync_server에서 1회 보장됨).
+pub(crate) fn current_pairing_token() -> String {
+    load_settings().pairing_token.unwrap_or_default()
 }
 
 #[tauri::command]
@@ -296,6 +331,9 @@ async fn start_sync_server(app: tauri::AppHandle) -> Result<SyncServerInfo, Stri
         _ => default_dir,
     };
 
+    // 페어링 토큰 보장 — 없으면 첫 실행 시 1회 생성. /pair 핸들러보다 먼저 준비.
+    let _ = ensure_pairing_token()?;
+
     let store = ensure_store()?;
     let port = sync_server::start(save_dir.clone(), app.clone(), store).await?;
     let local_ip = local_ip_address::local_ip()
@@ -344,10 +382,40 @@ async fn start_sync_server(app: tauri::AppHandle) -> Result<SyncServerInfo, Stri
 // 시스템에 cloudflared 미설치 시 영구 None — 자연스럽게 LAN-only UX.
 #[tauri::command]
 fn get_external_url() -> Option<String> {
-    CLOUDFLARED
+    current_external_url()
+}
+
+// 폰 페어링 페이로드 — 프론트가 QR/공유 링크로 폰에 전달하기 위해 호출.
+// 폰은 이 페이로드만 있으면 LAN/외부 양쪽 동기화 가능.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PairingPayload {
+    device_id: String,
+    device_name: String,
+    lan_ip: String,
+    port: u16,
+    external_url: Option<String>,
+    token: String,
+    version: String,
+}
+
+#[tauri::command]
+fn get_pairing_payload() -> Result<PairingPayload, String> {
+    let info = SYNC_SERVER
         .lock()
-        .ok()
-        .and_then(|g| g.as_ref().and_then(|h| h.external_url()))
+        .map_err(|e| e.to_string())?
+        .clone()
+        .ok_or_else(|| "sync server not started yet".to_string())?;
+    let token = ensure_pairing_token()?;
+    Ok(PairingPayload {
+        device_id: machine_uid::get().unwrap_or_else(|_| "unknown".to_string()),
+        device_name: get_device_name(),
+        lan_ip: info.local_ip,
+        port: info.port,
+        external_url: current_external_url(),
+        token,
+        version: env!("CARGO_PKG_VERSION").to_string(),
+    })
 }
 
 // 저장 폴더 변경 — settings.json에 영속화. 현재 세션의 서버는 기존 경로 유지,
@@ -461,6 +529,7 @@ pub fn run() {
             start_device_discovery,
             discover_devices,
             get_external_url,
+            get_pairing_payload,
             file_exists,
             compress_session_start,
             compress_record_insert,

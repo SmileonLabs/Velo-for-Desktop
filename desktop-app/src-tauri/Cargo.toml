@@ -32,6 +32,8 @@ hex = "0.4"
 dirs = "5.0"
 # mDNS/Bonjour 광고 — 폰이 같은 LAN에서 "_velo._tcp" 서비스를 검색해 데스크탑 자동 발견
 mdns-sd = "0.13"
+# 페어링 토큰(32바이트 OS 난수) 생성 — 폰↔데스크탑 인증.
+getrandom = "0.2"
 
 # Wi-Fi Direct (Windows 전용) — Windows.Devices.WiFiDirect WinRT API 호출.
 # macOS·Linux에서는 컴파일 자체 안 됨 → target_os 분기로 의존성 격리.

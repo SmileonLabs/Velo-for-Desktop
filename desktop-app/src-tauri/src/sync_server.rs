@@ -46,6 +46,9 @@ pub async fn start(save_dir: PathBuf, app: AppHandle, store: Arc<SyncStore>) -> 
     let state = AppState { save_dir, app, store };
     let app = Router::new()
         .route("/ping", get(ping_handler))
+        // 폰 페어링 핸드셰이크 — LAN에서 1회 호출 → 토큰·외부URL 받아 영구 저장.
+        // 이후 외부 URL로도 같은 토큰으로 인증 가능.
+        .route("/pair", get(pair_handler))
         .route("/upload", post(upload_handler))
         // 재개 업로드: 폰이 "어디까지 받았어?" 조회 → 끊긴 지점부터 이어 전송.
         .route("/upload/status", get(upload_status_handler))
@@ -79,6 +82,20 @@ async fn ping_handler() -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "service": "velo-desktop",
         "version": env!("CARGO_PKG_VERSION"),
+    }))
+}
+
+// /pair — 폰이 LAN에서 1회 호출. 응답 페이로드를 폰이 영구 저장하면 LAN/외부 양쪽 동기화 가능.
+// 인증 없음(LAN trust 가정) — v2에서 PIN 기반 핸드셰이크 추가 예정.
+// 외부 URL은 cloudflared 발급 전이면 null. 폰은 None일 경우 LAN-only로 동작.
+async fn pair_handler() -> Json<serde_json::Value> {
+    let device_id = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
+    Json(serde_json::json!({
+        "service": "velo-desktop",
+        "version": env!("CARGO_PKG_VERSION"),
+        "deviceId": device_id,
+        "externalUrl": crate::current_external_url(),
+        "token": crate::current_pairing_token(),
     }))
 }
 
