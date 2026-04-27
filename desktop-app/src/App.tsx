@@ -22,6 +22,25 @@ import { supabase } from './supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerDesktopDevice, startHeartbeat } from './deviceRegistration';
 
+// 첫 실행 시 언어 결정 — localStorage 저장값 우선, 없으면 OS 언어 감지, 그것도 안 되면 영어.
+// 시스템 언어 매칭이 잘못될 가능성이 있어 헤더 selector는 그대로 두고 유저가 언제든 변경 가능.
+const SUPPORTED_LANGUAGES: Language[] = ['ko', 'en', 'ja', 'zh', 'es', 'fr', 'de', 'pt', 'ru', 'hi'];
+
+function detectInitialLanguage(): Language {
+    try {
+        const saved = localStorage.getItem('VL_LANGUAGE');
+        if (saved && SUPPORTED_LANGUAGES.includes(saved as Language)) {
+            return saved as Language;
+        }
+    } catch {
+        // localStorage 접근 실패 — privacy mode 등. fallback으로 진행.
+    }
+    // navigator.language: "ko-KR", "en-US", "zh-CN" 형식 → 앞 2글자만 비교.
+    const raw = (typeof navigator !== 'undefined' ? navigator.language : '') || 'en';
+    const code = raw.slice(0, 2).toLowerCase() as Language;
+    return SUPPORTED_LANGUAGES.includes(code) ? code : 'en';
+}
+
 // 완료 Toast subtitle용 간단 포매터. 크기 단위 자동 선택.
 function formatBytesShort(bytes: number): string {
     if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
@@ -63,7 +82,8 @@ const App: React.FC = () => {
 
     // --- State ---
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-    const [language, setLanguage] = useState<Language>('ko');
+    // 초기값은 첫 실행 시에만 함수 평가. 이후 setLanguage로 변경 + localStorage 동기화.
+    const [language, setLanguage] = useState<Language>(() => detectInitialLanguage());
     const [isActivated, setIsActivated] = useState<boolean>(false);
     const [showActivation, setShowActivation] = useState<boolean>(false);
     const [showLicenseStatus, setShowLicenseStatus] = useState<boolean>(false);
@@ -95,6 +115,11 @@ const App: React.FC = () => {
     // 이벤트 listener는 마운트 시 한 번만 등록 — language를 ref로 추적해 최신 값 참조.
     const languageRef = useRef(language);
     useEffect(() => { languageRef.current = language; }, [language]);
+
+    // 유저가 언어 셀렉터로 변경한 값을 localStorage에 저장 — 다음 실행에 우선 적용.
+    useEffect(() => {
+        try { localStorage.setItem('VL_LANGUAGE', language); } catch { /* privacy mode 등 */ }
+    }, [language]);
 
     useEffect(() => {
         void invoke<string>('get_machine_id')
