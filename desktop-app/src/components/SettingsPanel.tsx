@@ -251,6 +251,34 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                                 {language === 'ko' ? '원본 비율을 유지한 채 압축합니다.' : 'Compression keeps the original aspect ratio.'}
                             </p>
                         </section>
+
+                        {/* 무손실 모드 — 픽셀 100% 보존. JPG/WEBP는 PNG로 자동 전환, AVIF는 CRF=0 사용. */}
+                        <section>
+                            <label className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl hover:border-primary-500 transition-all cursor-pointer group">
+                                <div className="flex items-center gap-2 flex-1">
+                                    <ShieldCheck size={16} className={`text-gray-400 group-hover:text-primary-500 ${settings.enableLossless ? 'text-primary-500' : ''}`} />
+                                    <div>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-xs font-bold text-gray-700 dark:text-slate-200">
+                                                {language === 'ko' ? '무손실 모드' : 'Lossless Mode'}
+                                            </span>
+                                        </div>
+                                        <p className="text-[10px] text-gray-400 mt-0.5">
+                                            {language === 'ko'
+                                                ? '픽셀 100% 동일. 디자인·문서용. JPG/WEBP는 PNG로 자동 전환'
+                                                : 'Pixel-identical. For design/docs. JPG/WEBP auto-switch to PNG'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <input
+                                    type="checkbox"
+                                    checked={settings.enableLossless}
+                                    onChange={(e) => updateSettings({ enableLossless: e.target.checked })}
+                                    disabled={isProcessing}
+                                    className="w-4 h-4 rounded text-primary-500 focus:ring-primary-500"
+                                />
+                            </label>
+                        </section>
                     </div>
                 )}
 

@@ -45,6 +45,9 @@ export interface CompressionSettings {
     // iOS 16+, macOS 13+, Android 12+, Windows 11+에서 OS 단 디코딩 지원.
     imageFormat: 'JPG' | 'WEBP' | 'AVIF';
     imageQuality: number; // 1-100
+    // 무손실 모드 — 픽셀 데이터 100% 동일 보장. 이미지에만 적용.
+    // AVIF: CRF=0. JPG/WEBP: PNG로 자동 전환 (JPG/WEBP는 진짜 무손실 어려움).
+    enableLossless: boolean;
 }
 
 // iOS/Android와 동일한 10개국어. 추가 시 constants.ts TRANSLATIONS도 같이 갱신.

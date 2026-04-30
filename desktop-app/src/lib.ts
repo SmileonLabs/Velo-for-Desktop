@@ -53,11 +53,19 @@ export function compressImage(
     outputPath: string,
     format: 'JPG' | 'PNG' | 'WEBP' | 'AVIF',
     quality: number,
-    onProgress?: ProgressCallback
+    onProgress?: ProgressCallback,
+    lossless: boolean = false
 ): { promise: Promise<void>, stop: () => Promise<void> } {
+    // 무손실 모드 — JPG/WEBP는 본질적으로 손실. PNG로 자동 전환 (Canvas가 PNG는 무손실 처리).
+    // AVIF는 무손실 모드에서 CRF=0 사용 (FFmpeg 경로).
+    let effectiveFormat = format;
+    if (lossless && (format === 'JPG' || format === 'WEBP')) {
+        effectiveFormat = 'PNG';
+    }
+
     // AVIF는 Canvas API가 지원 안 함 → FFmpeg 경로로 분기
-    if (format === 'AVIF') {
-        return compressToAvifWithProgress(inputPath, outputPath, quality, onProgress);
+    if (effectiveFormat === 'AVIF') {
+        return compressToAvifWithProgress(inputPath, outputPath, quality, onProgress, lossless);
     }
 
     const run = async () => {
@@ -83,7 +91,8 @@ export function compressImage(
 
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        const outputMime = getMimeForOutput(format);
+        const outputMime = getMimeForOutput(effectiveFormat);
+        // PNG는 quality 파라미터 무시하고 항상 무손실. JPG/WEBP에서만 quality 적용.
         const normalizedQuality = Math.max(0.01, Math.min(1, quality / 100));
         const outputDataUrl = canvas.toDataURL(outputMime, normalizedQuality);
         const outputBytes = dataUrlToBytes(outputDataUrl);
@@ -103,29 +112,34 @@ export function compressImage(
     };
 }
 
-/// AVIF용 progress 처리를 caller의 onProgress로 위임 (compressToAvif가 내부 fixed undefined라 분리).
+/// AVIF 인코딩. lossless=true면 CRF=0 (픽셀 100% 동일), false면 quality 기반 손실 압축.
 function compressToAvifWithProgress(
     inputPath: string,
     outputPath: string,
     quality: number,
-    onProgress?: ProgressCallback
+    onProgress?: ProgressCallback,
+    lossless: boolean = false
 ): { promise: Promise<void>, stop: () => Promise<void> } {
     let child: Child | null = null;
 
     const run = async () => {
         const normalized = Math.max(1, Math.min(100, quality));
-        // AV1 CRF: quality 100 → 18(시각적 무손실), 50 → 34, 1 → 50.
-        const crf = Math.round(50 - (normalized * 32 / 100));
+        // AV1 CRF: lossless=true → 0 (무손실). 아니면 quality 100→18, 50→34, 1→50.
+        const crf = lossless ? 0 : Math.round(50 - (normalized * 32 / 100));
 
-        const command = Command.sidecar('binaries/ffmpeg', [
+        const ffmpegArgs = [
             '-y',
             '-i', inputPath,
             '-c:v', 'libsvtav1',
             '-crf', String(crf),
             '-still-picture', '1',
-            '-pix_fmt', 'yuv420p',
-            outputPath,
-        ]);
+        ];
+        // 무손실 모드는 yuv444p (full chroma) 권장 — 색 정보 손실 없게.
+        // 손실 모드는 yuv420p로 더 작은 파일.
+        ffmpegArgs.push('-pix_fmt', lossless ? 'yuv444p' : 'yuv420p');
+        ffmpegArgs.push(outputPath);
+
+        const command = Command.sidecar('binaries/ffmpeg', ffmpegArgs);
 
         const exitCode = await new Promise<number>((resolve, reject) => {
             command.on('close', (data) => resolve(data.code ?? -1));

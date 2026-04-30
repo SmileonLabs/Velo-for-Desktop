@@ -362,6 +362,7 @@ const App: React.FC = () => {
         useHighEfficiencyCodec: false, // Default to FALSE (VP9 Safe)
         imageFormat: 'JPG',
         imageQuality: 80,
+        enableLossless: false, // 무손실 모드 — 기본 OFF (일반 사용자는 손실 압축 더 작아서 선호)
     });
 
     const [isProcessing, setIsProcessing] = useState(false);
@@ -596,7 +597,11 @@ const App: React.FC = () => {
         const videoFormat = settings.format;
         const imageFormat = settings.imageFormat;
         // 'AV1' 포맷은 컨테이너가 아니라 코덱 — 실제 파일 확장자는 .mp4 (libsvtav1 in MP4)
-        const rawExt = (fileMediaType === 'image' ? imageFormat : videoFormat).toLowerCase();
+        let rawExt = (fileMediaType === 'image' ? imageFormat : videoFormat).toLowerCase();
+        // 무손실 모드 + JPG/WEBP → PNG로 자동 전환 (compressImage 내부 동작과 일치)
+        if (settings.enableLossless && fileMediaType === 'image' && (rawExt === 'jpg' || rawExt === 'webp')) {
+            rawExt = 'png';
+        }
         const ext = rawExt === 'av1' ? 'mp4' : rawExt;
 
         try {
@@ -677,7 +682,8 @@ const App: React.FC = () => {
                     settings.imageQuality,
                     () => {
                         setFiles(prev => prev.map(f => f.id === file.id ? { ...f, progress: 100 } : f));
-                    }
+                    },
+                    settings.enableLossless
                 );
 
             const { promise, stop } = task;
